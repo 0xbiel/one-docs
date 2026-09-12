@@ -14,9 +14,17 @@ Set `ONE_CORS_ORIGINS` to the exact Vite origin, for example `http://localhost:5
 
 When using Docker, do not set a hard-coded API host in the browser: use `VITE_API_BASE_URL=/api/v1` and open the frontend origin. Nginx proxies `/api/` to FastAPI. A Tailscale URL must be HTTPS and must retain the `/api/v1` path for iOS.
 
-## LM Studio connection fails
+## Inference provider connection fails
 
-Check that LM Studio is serving an OpenAI-compatible `/v1` endpoint, that `ONE_LM_STUDIO_URL` includes `/v1`, and that the configured model is exactly `qwen3.6-35b-a3b`. Authentication keys belong only in local environment variables. The adapter’s deterministic fallback is expected when the local service is unavailable.
+Inference is disabled by default in the local `.env` (`ONE_LLM_ENABLED=false`),
+so this is expected until you explicitly enable it. For LM Studio, check that
+it is serving an OpenAI-compatible `/v1` endpoint, that `ONE_LM_STUDIO_URL`
+includes `/v1`, and that the configured model is exactly
+`qwen3.6-35b-a3b`. For OpenRouter or another compatible gateway, check
+`ONE_LLM_BASE_URL`, `ONE_LLM_MODEL`, `ONE_LLM_PROVIDER`, and the local-only
+`ONE_LLM_API_KEY`. Never put a provider key in the frontend or a committed
+file. The adapter’s deterministic fallback is expected when a provider is
+disabled, unavailable, rate-limited, or returns an invalid response.
 
 ## Camera permission is denied
 

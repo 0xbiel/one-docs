@@ -23,6 +23,8 @@ ONE_LIVEKIT_API_SECRET=secret
 ONE_LM_STUDIO_URL=http://127.0.0.1:1234/v1
 ONE_LM_STUDIO_MODEL=qwen3.6-35b-a3b
 ONE_LM_STUDIO_API_KEY=
+# Keep inference off for the deterministic MVP until it is explicitly enabled.
+ONE_LLM_ENABLED=false
 ONE_CORS_ORIGINS=http://localhost:5173,http://localhost:3000
 ```
 

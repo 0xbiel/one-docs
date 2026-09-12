@@ -23,9 +23,9 @@ above is for a fresh stack whose frontend should use the default `4173` port.
 
 ONE's current account creation is pairing bootstrap, not password registration:
 
-1. Open `/create-account` to create the caregiver household account. The form calls `POST /api/v1/pairing/start`, completes the returned code, and routes to `/onboarding`.
+1. Open `/create-account` (also linked from the live `/login` screen) to create the caregiver household account. The form calls `POST /api/v1/pairing/start`, completes the returned code, and routes to `/onboarding`.
 2. Onboarding asks for four purpose choices: daily check-in support (`audio_capture`), room/camera data (`video_capture`), medication organization (`medication_management`), and family sharing (`family_mode`). Complete every choice before dashboard access; the browser stores a marker scoped to `home_id` + `user_id`.
-3. Returning caregivers use `/login` and enter a pairing/session code. The browser exchanges it at `/api/v1/pairing/complete`.
+3. Returning caregivers use `/login` and enter a pairing/session code. The browser exchanges it at `/api/v1/pairing/complete`. People joining an existing home use the `/join-household` link and invitation code.
 4. The live web client stores bearer token, home ID, and user ID in `sessionStorage`, then uses the token for API/SSE requests. The onboarding marker is only a device-local UX gate; it is not proof of consent, legal representation, or controller approval.
 
 There is no password login, refresh-token, email verification, or external identity provider. Codes expire after ten minutes and are single-use. Logout is `DELETE /api/v1/sessions/current`, followed by clearing session storage and stopping active streams.

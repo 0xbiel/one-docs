@@ -16,7 +16,7 @@ Run the [quickstart](/guide/quickstart), then explore the [architecture](/archit
 | Vision | Deterministic no-download detector, temporal hit tracking, calibrated-approximate projection, zone fallback | `one/app/vision.py` |
 | Web | React/Vite dashboard with family mode, demo/live API modes, SSE mapping, pairing, privacy controls, 3D/2D map, browser publisher | `one-frontend/src/` |
 | iOS | SwiftUI caregiver/resident/family shells, runtime endpoint configuration, styling tokens, RoomPlan capture when supported | `one-ios/One/` |
-| Inference | Optional OpenAI-compatible LM Studio adapter configured for `qwen3.6-35b-a3b`; deterministic summary fallback | `one/app/integrations.py` |
+| Inference | Optional OpenAI-compatible adapter; local LM Studio/Qwen is the default and OpenRouter/other gateways are explicit overrides; deterministic summary fallback | `one/app/integrations.py` |
 
 > **Read the status labels carefully.** “Implemented” means code exists in this checkout. Family and medication flows are synthetic/demo state in the clients, even though bounded backend routes exist. Docker services, PostgreSQL, OWLv2 inference, and production LiveKit subscriber integration still need deployment work.
 

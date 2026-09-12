@@ -9,11 +9,11 @@ ONE is a local-first, modular-monolith MVP. The backend is the policy and eviden
                │ HTTPS / bearer / SSE / LiveKit token
 ┌──────────────▼───────────────┐
 │ FastAPI /api/v1               │  auth · consent · family · medication · retention
-│ PostgreSQL + local object store│ vision · check-ins · LM Studio adapter
+│ PostgreSQL + local object store│ vision · check-ins · OpenAI-compatible adapter
 └──────┬──────────┬─────────────┘
        │          │
-  RoomPlan    LM Studio
-  / iOS       qwen3.6-35b-a3b (optional, local)
+  RoomPlan    LM Studio / OpenRouter / compatible gateway
+  / iOS       (optional; local LM Studio is the default)
 ```
 
 ## Request boundaries
@@ -35,7 +35,11 @@ camera frame → bounded base64 decode → detector → temporal stability → p
                                   event bus / SSE → caregiver UI → human review
 ```
 
-The LLM adapter is downstream of collected context. It returns a structured summary when LM Studio responds and a deterministic non-medical fallback when it does not. It is not the authorization or safety boundary.
+The LLM adapter is downstream of collected context. It returns a structured
+summary when the configured OpenAI-compatible provider responds and a
+deterministic non-medical fallback when it does not. LM Studio is the default;
+hosted providers require an explicit environment override and privacy review.
+The adapter is never the authorization or safety boundary.
 
 ## Family-mode boundary
 

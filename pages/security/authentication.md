@@ -61,7 +61,9 @@ Validation failures are structured `422` responses with `error`, `request_id`, a
 The React client uses the pairing code as its passwordless login. `/create-account`
 is the caregiver-facing household bootstrap form; it calls `pairing/start`,
 completes the returned code, and then opens onboarding. `/login` is the existing
-caregiver sign-in form for a code/session. `/join/:code` remains the public
+caregiver sign-in form for a code/session. The login screen links directly to
+`/create-account` for a new home and `/join-household` for an invitation; these
+are live API routes, not demo shortcuts. `/join/:code` remains the public
 publisher pairing surface and sanitizes input to six digits. A
 successful exchange saves `one_access_token`, `one_home_id`, and `one_user_id`
 in `sessionStorage`. API and SSE requests read the token and add a bearer
@@ -116,9 +118,29 @@ Compose runs self-hosted development LiveKit with placeholder `devkey`/`secret`,
 
 For a phone, `localhost`/`127.0.0.1` means the phone itself. An HTTPS page needs a trusted `wss://` LiveKit endpoint; plain `ws://localhost` will hit reachability/mixed-content/certificate constraints. Tailscale Serve can expose the frontend over a private tailnet, but it does not replace bearer auth, consent, role checks, or LiveKit reachability. Keep `/api/v1` in the iOS URL and keep LM Studio private.
 
-## Local-only inference and privacy boundary
+## OpenAI-compatible providers and privacy boundary
 
-The backend's optional inference adapter is OpenAI-compatible **LM Studio on the local network/loopback**, configured for `qwen3.6-35b-a3b`. It is not OpenRouter, a paid API, or a hosted fallback. If LM Studio is unavailable, the deterministic non-medical summary fallback is used and marked degraded. Keep LM Studio keys in local environment variables and never expose its port publicly.
+The backend speaks the OpenAI-compatible `/chat/completions` shape. LM Studio is
+the default local provider (`qwen3.6-35b-a3b`); OpenRouter or another compatible
+gateway is an explicit override, never an implicit fallback:
+
+```dotenv
+ONE_LLM_ENABLED=true
+ONE_LLM_PROVIDER=openrouter
+ONE_LLM_BASE_URL=https://openrouter.ai/api/v1
+ONE_LLM_MODEL=provider/model-name
+ONE_LLM_API_KEY=replace-with-a-local-secret
+ONE_LLM_TIMEOUT_SECONDS=15
+```
+
+Use `ONE_LLM_ENABLED=false` (the current local default) to make no model request
+and use the deterministic non-medical fallback. A provider key is sent only as
+a bearer header, is never logged or returned, and must stay in an ignored local
+`.env`. Do not enable a hosted provider for household data until the controller
+has approved the DPIA, processor/international-transfer review, purpose-specific
+consent, retention, and deletion path. OpenRouter's free-tier budget is not a
+dependency or a guarantee; an unavailable, rate-limited, or offline provider
+must degrade explicitly and core object memory remains local.
 
 Authentication does not establish legal representation or lawful basis for care. Current controls include purpose-versioned consent, video pause/revocation, same-home subject checks, publisher restrictions, audit rows, in-memory frame processing, 30-day observation expiry, and seven-day clip design. Export/deletion routes create requests; operational fulfilment, identity verification, backups, and legal timelines remain deployment work. Do not put real resident data, faces, audio, credentials, or prompts in these docs.
 
