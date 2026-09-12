@@ -2,19 +2,30 @@
 
 ONE is a local-first, modular-monolith MVP. The backend is the policy and evidence boundary; clients are role-specific presentation and capture surfaces. Family mode adds bounded household coordination: multiple member accounts can have caregiver roles, while plans/check-ins remain purpose-gated and explicitly non-medical.
 
-```text
-┌──────────────────────────────┐
-│ Browser dashboard / publisher │  React + Vite, demo/live API client
-└──────────────┬───────────────┘
-               │ HTTPS / bearer / SSE / LiveKit token
-┌──────────────▼───────────────┐
-│ FastAPI /api/v1               │  auth · consent · family · medication · retention
-│ PostgreSQL + local object store│ vision · check-ins · OpenAI-compatible adapter
-└──────┬──────────┬─────────────┘
-       │          │
-  RoomPlan    LM Studio / OpenRouter / compatible gateway
-  / iOS       (optional; local LM Studio is the default)
+The system boundary is summarized below: clients capture or review information, while the local API enforces policy and coordinates storage, media, and optional inference.
+
+```mermaid
+flowchart TD
+    browser[Browser dashboard or publisher\nReact + Vite]
+    ios[iOS caregiver, resident, or publisher\nSwiftUI + RoomPlan when supported]
+    api[FastAPI /api/v1\nauth, consent, family, medication, vision, check-ins]
+    postgres[(PostgreSQL\nauthoritative database)]
+    objects[(Local object store\nclips and map artifacts)]
+    livekit[Self-hosted LiveKit\nlocal development media]
+    lm[LM Studio\nlocal default provider]
+    gateway[OpenRouter or compatible gateway\nexplicit override only]
+
+    browser -->|HTTPS, bearer, SSE| api
+    ios -->|HTTPS, bearer| api
+    browser -->|LiveKit token after consent| livekit
+    ios -->|LiveKit token after consent| livekit
+    api --> postgres
+    api --> objects
+    api -->|optional OpenAI-compatible adapter| lm
+    api -.->|explicit environment override| gateway
 ```
+
+The diagram intentionally shows PostgreSQL and the object store behind FastAPI, and LiveKit as a separately authorized media path; neither client bypasses the API policy boundary.
 
 ## Request boundaries
 
@@ -27,13 +38,22 @@ ONE is a local-first, modular-monolith MVP. The backend is the policy and eviden
 
 ## Data flow
 
-```text
-camera frame → bounded base64 decode → detector → temporal stability → projection
-                                                        ↓
-                                      approximate observation + confidence + zone
-                                                        ↓
-                                  event bus / SSE → caregiver UI → human review
+The vision path below turns a camera frame into an approximate, reviewable event; it does not make a diagnosis or persist the raw frame in the current response path.
+
+```mermaid
+flowchart LR
+    frame[Camera frame] --> decode[Bounded base64 decode]
+    decode --> detector[Detector]
+    detector --> stable[Temporal stability\nrepeated-hit window]
+    stable --> projection[Projection\ncalibration + depth when available]
+    projection --> observation[Approximate observation\nconfidence + uncertainty + zone]
+    observation --> event[Event bus]
+    event --> sse[SSE stream]
+    sse --> caregiver[Caregiver UI]
+    caregiver --> review[Human review]
 ```
+
+When calibration or depth is unavailable, projection produces a wider zone fallback rather than a fabricated coordinate. The optional LLM adapter receives bounded collected context downstream of this path.
 
 The LLM adapter is downstream of collected context. It returns a structured
 summary when the configured OpenAI-compatible provider responds and a

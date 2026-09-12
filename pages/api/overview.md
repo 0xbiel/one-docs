@@ -30,12 +30,19 @@ Every operation is listed exactly once in the pages below, using its `/api/v1` p
 
 ## Common request sequence
 
-```text
-pairing/start → pairing/complete → consent(video_capture)
-    → camera / room / map / calibration setup
-    → vision/frames or observations
-    → events or events/stream for caregiver review
+The common setup and review sequence is shown below. Each protected step remains scoped to the paired home and its active consent policy.
+
+```mermaid
+flowchart LR
+    start[POST pairing/start] --> complete[POST pairing/complete]
+    complete --> consent[Record video_capture consent]
+    consent --> setup[Camera, room, map, and calibration setup]
+    setup --> ingest[POST vision/frames or observations]
+    ingest --> review[GET events or events/stream]
+    review --> caregiver[Caregiver review]
 ```
+
+Pairing completion creates the bearer session; the API rejects vision and media operations when the required consent is missing or paused.
 
 Home IDs are authorization-scoped. A valid token for one home must not be treated as a global account token.
 

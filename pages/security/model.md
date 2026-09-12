@@ -2,11 +2,23 @@
 
 ## Trust boundaries
 
-```text
-resident device / browser  ── consent + permission ──▶  local API
-local API                  ── signed token / SSE ────▶  caregiver client
-local API                  ── loopback / LAN ────────▶  LM Studio + storage
+The trust boundaries are directional: capture requires client permission and consent, while the API remains the authority for sessions, home membership, and retrieval.
+
+```mermaid
+flowchart LR
+    resident[Resident device or browser]
+    api[Local FastAPI]
+    caregiver[Caregiver client]
+    lm[LM Studio]
+    storage[(Local storage)]
+
+    resident -->|consent + device permission| api
+    api -->|signed token + SSE| caregiver
+    api -->|loopback or LAN| lm
+    api -->|authorized reads and writes| storage
 ```
+
+This boundary keeps provider and storage access behind the local API; hosted inference is an explicit configuration override and is subject to privacy review.
 
 The API is authoritative for membership, home ownership, consent, expiry, subject access, and retrieval authorization. Client UI state is not a security boundary. A caregiver role does not automatically imply legal representation: represented-subject consent and family-purpose checks remain explicit.
 
