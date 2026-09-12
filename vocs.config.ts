@@ -43,7 +43,7 @@ export default defineConfig({
   sidebar: {
     '/guide/': [
       { text: 'Start here', items: [{ text: 'Quickstart', link: '/guide/quickstart' }, { text: 'Environment setup', link: '/guide/environment' }, { text: 'Demo guide', link: '/demo' }] },
-      { text: 'Operate ONE', items: [{ text: 'Docker stack', link: '/guide/docker' }, { text: 'Troubleshooting', link: '/guide/troubleshooting' }, { text: 'Testing', link: '/guide/testing' }] },
+      { text: 'Operate ONE', items: [{ text: 'Docker stack', link: '/guide/docker' }, { text: 'PostgreSQL adapter', link: '/guide/postgresql' }, { text: 'Troubleshooting', link: '/guide/troubleshooting' }, { text: 'Testing', link: '/guide/testing' }] },
     ],
     '/architecture/': [
       { text: 'System', items: [{ text: 'Overview', link: '/architecture/overview' }, { text: 'Repository map', link: '/architecture/repos' }, { text: 'Family mode', link: '/architecture/family' }, { text: 'Object memory & calibration', link: '/architecture/memory' }] },
