@@ -50,7 +50,13 @@ For direct Vite development, use:
 
 ```dotenv
 VITE_API_BASE_URL=http://localhost:8000/api/v1
-VITE_DEMO_MODE=true
+VITE_DEMO_MODE=false
 ```
 
-For Docker, use `VITE_API_BASE_URL=/api/v1` so Nginx keeps API calls same-origin. For iOS, `RuntimeConfiguration` reads the `ONE_API_BASE_URL` Info.plist value generated from the Xcode build setting. A Tailscale Serve deployment uses the HTTPS host plus `/api/v1`; never hard-code a personal tailnet hostname in a committed project file.
+Live mode is the default; demo data is an explicit opt-in with
+`VITE_DEMO_MODE=true` (the tracked `.env.test` uses that value only for
+deterministic UI tests). For Docker, use `VITE_API_BASE_URL=/api/v1` so Nginx
+keeps API calls same-origin. For iOS, `RuntimeConfiguration` reads the
+`ONE_API_BASE_URL` Info.plist value generated from the Xcode build setting. A
+Tailscale Serve deployment uses the HTTPS host plus `/api/v1`; never hard-code
+a personal tailnet hostname in a committed project file.

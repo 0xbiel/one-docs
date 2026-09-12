@@ -1,6 +1,9 @@
 # Demo guide
 
-This is the repeatable, honest path for a short ONE walkthrough. Use demo mode unless you have already verified a local backend, browser permission, and the intended network boundary. The smoothest setup is Docker plus same-origin `/api/v1`; use direct Vite only when iterating on the frontend.
+This is the repeatable, honest path for a short ONE walkthrough. Docker is the
+default live path once PostgreSQL health and the browser/network boundary have
+been verified. Use demo mode only when you explicitly set
+`VITE_DEMO_MODE=true`; use direct Vite only when iterating on the frontend.
 
 ## The four-minute story
 
@@ -22,7 +25,7 @@ For a phone walkthrough, run `docker compose up --build api frontend`, then `tai
 
 - Do not call object observations a diagnosis or medical prediction.
 - Do not imply that the current deterministic detector is OWLv2 inference.
-- Do not claim production PostgreSQL migrations, durable Redis event delivery, or a production LiveKit deployment.
+- Do not claim durable Redis event delivery or a production LiveKit deployment; PostgreSQL migrations are exercised locally and in CI, but backups, monitoring, and production operations still need a reviewed runbook.
 - Do not claim a working LiveKit subscriber: the current client has token/publisher scaffolding and a viewer surface, but not a verified production subscriber path.
 - Do not claim medication plans, caregiver invitations, or check-ins are persisted in the clients; current family data is mock/synthetic.
 - Do not imply that a demo placeholder is a real camera stream.
