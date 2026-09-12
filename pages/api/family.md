@@ -8,11 +8,11 @@ Operation ID: `family_members_api_v1_homes__home_id__family_members_get`. Bearer
 
 ## `POST /api/v1/homes/{home_id}/family/invites`
 
-Operation ID: `family_invite_api_v1_homes__home_id__family_invites_post`. Bearer caregiver/admin with `family_mode` consent. Request (`FamilyInviteIn`) requires `display_name` (1–120), optional `email` (max 254), `role` (`resident` or `caregiver`, default `caregiver`), and `expires_in_seconds` 300–604800 (default 86400). The one-time code is returned once for the synthetic local flow; only its hash is persisted.
+Operation ID: `family_invite_api_v1_homes__home_id__family_invites_post`. Bearer caregiver/admin with `family_mode` consent. Request (`FamilyInviteIn`) requires `display_name` (1–120), accepts an optional normalized `email` (max 254), `role` (`resident` or `caregiver`, default `caregiver`), and `expires_in_seconds` 300–604800 (default 86400). When an email is supplied, it is the identity boundary for the invitation. The one-time code is returned once for the local development outbox; only its hash is persisted.
 
 ## `POST /api/v1/family/invites/accept`
 
-Operation ID: `family_invite_accept_api_v1_family_invites_accept_post`. Public code exchange. Request (`FamilyInviteAcceptIn`) requires exactly six digits and optional `display_name` (max 120). Acceptance creates a new account/membership/session and returns bearer credentials plus `role`. Invalid/expired/used invitations return `400`.
+Operation ID: `family_invite_accept_api_v1_family_invites_accept_post`. Public code exchange. Request (`FamilyInviteAcceptIn`) requires exactly six digits and accepts `email` plus optional `display_name`. For an email-bound invitation, the email is required, case-insensitively matched, and must already belong to an ONE account; otherwise acceptance fails without creating a membership. The existing account is attached to the invited home and receives a session, so changing phones does not lose household access. Legacy invites without an email retain the local compatibility path. Invalid/expired/used invitations return `400`; missing account returns `404`, mismatch returns `403`.
 
 ## `POST /api/v1/homes/{home_id}/family-assistant`
 

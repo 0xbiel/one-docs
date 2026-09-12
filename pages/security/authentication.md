@@ -1,6 +1,6 @@
 # Authentication and session lifecycle
 
-This is the implementation-level reference for the current ONE authentication seam. It covers pairing bootstrap, bearer sessions, client storage, route behavior, LiveKit access, and MVP limits. There is no password login, email login, refresh-token endpoint, or identity-provider integration in this checkout.
+This is the implementation-level reference for the current ONE authentication seam. It covers persistent passwordless email identity, pairing bootstrap, bearer sessions, client storage, route behavior, LiveKit access, and MVP limits. There is no password login, refresh-token endpoint, or external identity-provider integration in this checkout.
 
 ## Vocabulary and authority
 
@@ -35,7 +35,7 @@ Both codes are exchanged at `POST /api/v1/pairing/complete` with `{ "code": "123
 
 `expires_in` comes from `ONE_SESSION_TTL_MINUTES` (60 by default); it is not a refresh lifetime. The bootstrap `pairing/start` response includes the requested `role`; the code-exchange response intentionally does not, so clients use authenticated `/api/v1/me` for authoritative role. Invalid, expired, or reused codes return `400`. Do not print codes or tokens in logs, URLs, screenshots, analytics, or support tickets.
 
-Family invitations use `family_invites` and `POST /api/v1/family/invites/accept`; they also return a bearer session after a single-use code. They are synthetic local flows, not verified email invitations.
+Family invitations use `family_invites` and `POST /api/v1/family/invites/accept`; an email-bound invitation must match an existing normalized email identity and then returns a bearer session for that account. The local development outbox still displays the one-time code; it is not a production email delivery provider.
 
 ## Protected requests and failures
 

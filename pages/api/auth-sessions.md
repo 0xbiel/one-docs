@@ -1,6 +1,16 @@
 # Auth, pairing & sessions
 
-These operations create a synthetic home/member, exchange a one-time code for a bearer session, pair a publisher device, and revoke the current session. Codes are six digits, hashed at rest, single-use, and intentionally suitable for a local demo flow—not an account recovery protocol.
+These operations create a home/member, authenticate a persistent email identity with a short-lived one-time code, exchange legacy pairing codes for a bearer session, pair a publisher device, and revoke the current session. Codes are six digits, hashed at rest, single-use, and intentionally suitable for the local MVP—not an account recovery protocol.
+
+## `POST /api/v1/auth/email/request`
+
+Requests a passwordless email challenge. `purpose` is `create` or `login`. Email identifiers are trimmed and case-folded before lookup and storage. `create` requires `display_name` and creates the home, membership, and runtime records before issuing the challenge; `login` selects the first non-publisher household membership for the existing email identity. The response includes a `verification_id`, normalized `email`, `home_id`, `user_id`, role, and 600-second expiry.
+
+The local development/test response also includes `dev_code` and `delivery: development_outbox`; this is a deliberately bounded outbox because the Docker MVP has no external mail subscription. Production must connect a mail delivery adapter and must not expose `dev_code`.
+
+## `POST /api/v1/auth/email/verify`
+
+Accepts `{ "email": "caregiver@example.com", "code": "123456" }`. The backend hashes the code, checks the normalized email, expiry, use state, and household membership, then atomically consumes the challenge and creates a bearer session. A reused or expired code returns `400`. The email identity and membership remain the durable account boundary when a caregiver changes phones; client Keychain/session storage is only a local credential cache.
 
 ## `GET /api/v1/health`
 
@@ -34,7 +44,7 @@ Publisher pairing is not a general household invite. Publisher accounts are excl
 
 Operation ID: `logout_api_v1_sessions_current_delete`. Bearer operation that deletes the session represented by the current `Authorization` header and returns `{ "ok": true }`. The backend stores only a hash of the token.
 
-There is no password login, refresh-token, introspection, logout-all, or identity-provider endpoint. Pairing completion is the current login/session bootstrap operation. Revocation is token-specific; clients must also clear local state and disconnect SSE/LiveKit resources.
+There is no password login, refresh-token, introspection, logout-all, or identity-provider endpoint. Email verification and pairing completion are the current passwordless login/session bootstrap operations. Revocation is token-specific; clients must also clear local state and disconnect SSE/LiveKit resources.
 
 ## Gates and failure modes
 
