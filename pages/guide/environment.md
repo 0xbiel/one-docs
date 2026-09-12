@@ -6,8 +6,8 @@ The backend reads a `.env` file through `pydantic-settings` using the `ONE_` pre
 
 ```dotenv
 ONE_ENV=development
-ONE_DATABASE_URL=sqlite:///./one.db
-ONE_OBJECT_STORE_PATH=./data/objects
+ONE_DATABASE_URL=postgresql://one:replace-with-a-local-postgres-password@postgres:5432/one
+ONE_OBJECT_STORE_PATH=/app/data/objects
 ONE_BOOTSTRAP_SECRET=replace-with-a-local-secret
 # Compose-only dependency credentials; replace before shared LAN use.
 ONE_POSTGRES_DB=one
@@ -26,7 +26,7 @@ ONE_LM_STUDIO_API_KEY=
 ONE_CORS_ORIGINS=http://localhost:5173,http://localhost:3000
 ```
 
-The repository currently provides these settings in `one/app/config.py`; create your own local file rather than copying credentials from another machine. The `devkey`/`secret` pair is only for the local Compose `--dev` server. For a phone, set `ONE_LIVEKIT_URL` to a host-reachable LAN/Tailscale WebSocket endpoint and use trusted `wss://` when the page is served over HTTPS.
+The repository currently provides these settings in `one/app/config.py`; create your own local file rather than copying credentials from another machine. The PostgreSQL hostname `postgres` is reachable only from the Compose network. For a manual host-run backend, use an equivalent host URL such as `postgresql://one:<password>@127.0.0.1:5432/one`, or explicitly choose `sqlite:///./one.db` for the zero-setup test adapter. The `devkey`/`secret` pair is only for the local Compose `--dev` server. For a phone, set `ONE_LIVEKIT_URL` to a host-reachable LAN/Tailscale WebSocket endpoint and use trusted `wss://` when the page is served over HTTPS.
 
 ## LM Studio: local Qwen3.6
 

@@ -1,22 +1,22 @@
 # Docker stack
 
-`one/docker-compose.yml` wires the API and frontend to PostgreSQL, Redis, MinIO, LiveKit, and Caddy. The frontend is served by Nginx and routes `/api/*` to FastAPI on the same origin. It is deployment wiring for the MVP, not a complete production hardening profile.
+`one/docker-compose.yml` wires the API and frontend to PostgreSQL, Redis, MinIO, LiveKit, and Caddy. The frontend is served by Nginx and routes `/api/*` to FastAPI on the same origin. PostgreSQL is the Compose default; SQLite is retained as an explicit zero-setup test backend. This is deployment wiring for the MVP, not a complete production hardening profile.
 
 ```bash
 cd one
 test -f .env || cp .env.example .env # create/fill locally; never commit it
-docker compose up --build api frontend
+docker compose up --build -d api frontend
 ```
 
-The API is bound to `127.0.0.1:8000`; the frontend is bound to `127.0.0.1:4173`; LiveKit publishes `7880`, `7881`, and `7882/udp` for LAN WebRTC testing; Caddy is loopback-only on `8443` (HTTPS) and `8080` (HTTP) by default. Override `ONE_CADDY_HTTPS_PORT` or `ONE_CADDY_HTTP_PORT` only for a controlled ingress. The stack also creates named volumes for object data, Postgres, MinIO, and Caddy state.
+The API is bound to `127.0.0.1:8000`; the fresh frontend default is `127.0.0.1:4173`; LiveKit publishes `7880`, `7881`, and `7882/udp` for LAN WebRTC testing; Caddy is loopback-only on `8443` (HTTPS) and `8080` (HTTP) by default. Override `ONE_CADDY_HTTPS_PORT` or `ONE_CADDY_HTTP_PORT` only for a controlled ingress. The stack also creates named volumes for object data, Postgres, MinIO, and Caddy state. Port `4175` is a separate existing frontend and is intentionally not changed by this setup.
 
 ## Service roles
 
 | Service | Role in the current compose file | Status boundary |
 | --- | --- | --- |
-| `api` | FastAPI image, local object path, LM Studio host bridge | Runnable; defaults to SQLite unless overridden |
+| `api` | FastAPI image, PostgreSQL adapter, local object path, LM Studio host bridge | Runnable; waits for PostgreSQL health and applies numbered migrations |
 | `frontend` | Node build + Nginx SPA, `/api/` reverse proxy | Runnable; build args default to same-origin `/api/v1` and live mode |
-| `postgres` | PostgreSQL 16 | Image is wired; production adapter/migrations are not complete |
+| `postgres` | PostgreSQL 16 | Authoritative Compose database; persistent `one_pg` volume and readiness check |
 | `redis` | Event/cache dependency slot | No durable Redis event adapter is currently wired |
 | `minio` | S3-compatible object-store slot | API currently uses the local object-store adapter |
 | `livekit` | Self-hosted development LiveKit server | Uses local `devkey`/`secret`; no subscription; replace credentials and URL before shared use |

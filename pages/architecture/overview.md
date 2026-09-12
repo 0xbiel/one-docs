@@ -9,7 +9,7 @@ ONE is a local-first, modular-monolith MVP. The backend is the policy and eviden
                │ HTTPS / bearer / SSE / LiveKit token
 ┌──────────────▼───────────────┐
 │ FastAPI /api/v1               │  auth · consent · family · medication · retention
-│ SQLite + local object store   │  vision · check-ins · LM Studio adapter
+│ PostgreSQL + local object store│ vision · check-ins · LM Studio adapter
 └──────┬──────────┬─────────────┘
        │          │
   RoomPlan    LM Studio
@@ -41,4 +41,4 @@ The LLM adapter is downstream of collected context. It returns a structured summ
 
 Family mode is not a continuous household camera feed. With `family_mode` consent, an admin or caregiver can list household members and issue a single-use invite for another resident or caregiver. With `medication_management` consent, caregivers can organize human-entered plans, deterministic reminder slots, and check-in states (`pending`, `taken`, `skipped`, `missed`). The family assistant receives only the selected subject’s active plans and bounded check-in rows; it does not receive camera frames, transcripts, events, or the full household stream.
 
-The web/iOS family surfaces currently demonstrate this flow with synthetic local rows. The backend routes are implemented, but client persistence and real-person governance are not implied.
+The web/iOS family surfaces currently demonstrate this flow with synthetic rows. The backend routes persist through the selected database, but client fixture data and real-person governance are not implied.

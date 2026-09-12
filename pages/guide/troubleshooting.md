@@ -28,7 +28,15 @@ RoomPlan requires supported Apple hardware; Simulator intentionally reports unsu
 
 ## “PostgreSQL is configured” but requests fail
 
-The setting is accepted as deployment intent, but the repository’s complete adapter is SQLite. Keep local runs on SQLite until migrations and the PostgreSQL implementation are added.
+Check that the `postgres` service is healthy and that the API URL uses the same database, user, and password as `ONE_POSTGRES_*`:
+
+```bash
+docker compose ps postgres
+docker compose logs --tail=80 postgres
+curl -s http://127.0.0.1:8000/api/v1/health
+```
+
+The API applies `migrations/001_initial.sql` and `migrations/002_family_mode.sql` on startup and reports `database_status=ok` only after the connection succeeds. A local manual run needs `pip install -e '.[postgres]'`; the Docker image already installs that extra. Do not point a container at `127.0.0.1` for PostgreSQL—the Compose hostname is `postgres`.
 
 ## Family or medication controls look synthetic
 
