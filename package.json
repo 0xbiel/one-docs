@@ -7,8 +7,8 @@
     "node": ">=22.15"
   },
   "scripts": {
-    "dev": "vocs dev",
-    "build": "vocs build",
+    "dev": "node scripts/vocs.mjs dev",
+    "build": "node scripts/vocs.mjs build",
     "preview": "vocs preview"
   },
   "dependencies": {
