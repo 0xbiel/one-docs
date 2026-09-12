@@ -36,3 +36,15 @@ weekday groups; and `2026-09-12 @ 08:00` is a date-specific exception. Multiple
 rules may be separated by semicolons. Unsupported schedule text becomes an
 explicit `unscheduled` slot for human review; it is never guessed into a dose
 time.
+
+## Client flow
+
+The live web Family view selects a care recipient, chooses the reminder date,
+and loads plans and generated slots from these endpoints. **Add plan** opens a
+validated modal for the name, dose, instructions, recurrence text, active flag,
+and same-home caregiver assignment. **Edit** sends a versioned `PATCH`; the
+archive affordance is deliberately a reversible disable (`active=false`) after
+confirmation, not a destructive delete. Each pending slot can be marked taken
+or skipped through the check-in endpoint. iOS mirrors this with a native sheet,
+the same date-aware rule examples, optimistic versioning, and a trailing
+swipe-to-archive action.

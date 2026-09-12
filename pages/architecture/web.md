@@ -10,11 +10,11 @@ privacy requests, and LiveKit token issuance where implemented. Demo mode
 supplies deterministic scenes, objects, events, device status, pairing, and
 assistant copy only when `VITE_DEMO_MODE=true` is explicitly set.
 
-The UI also maps backend `object_observed` to “Object observed” / “non-diagnostic” language. Family mode presents multiple household caregiver roles, a real live-member selector when `family_mode` is authorized, subject-scoped reminder reads, assigned responsibility, and acknowledgement status. Editing/invitation affordances and the demo dataset remain local presentation state; the assistant copy deliberately links answers to evidence and says “Not a diagnosis.”
+The UI also maps backend `object_observed` to “Object observed” / “non-diagnostic” language. Family mode presents multiple household caregiver roles, a live member selector when `family_mode` is authorized, subject-scoped reminder reads, assigned responsibility, date-aware recurrence, and acknowledgement status. In live mode, invitations, plan creation/editing, check-ins, and archive actions use the backend; synthetic rows appear only when `VITE_DEMO_MODE=true`. The assistant copy deliberately links answers to evidence and says “Not a diagnosis.”
 
 ## Browser publisher
 
-The publisher asks for `navigator.mediaDevices.getUserMedia({ video: true, audio: true })` only after consent. It stops tracks on unmount. In live mode it requests a backend-issued LiveKit token and connects with adaptive stream and dynacast; in demo mode it shows a privacy-safe placeholder.
+The publisher asks for `navigator.mediaDevices.getUserMedia({ video: true, audio: true })` only after consent. It stops tracks on unmount. In live mode it requests a backend-issued LiveKit token and connects with adaptive stream and dynacast; in demo mode it shows a privacy-safe placeholder. Caregivers start a publisher pairing from the dashboard: the one-time code stays in a modal with copy/regenerate controls, while the public `/join/:code` route remains the camera's separate exchange surface. `/dashboard/account` exposes the current session/home, privacy link, and explicit sign-out.
 
 ## Room view
 
@@ -22,4 +22,4 @@ The caregiver map has a Three.js 3D overview and a 2D accessible fallback. Marke
 
 ## Docker route
 
-The `one-frontend` Dockerfile builds the SPA with `VITE_API_BASE_URL=/api/v1` by default and serves it from Nginx. Nginx proxies `/api/` to the `api` container, giving browser clients a same-origin base. For phone access, expose port 4173 through Tailscale Serve and use the resulting HTTPS origin for browser and iOS configuration.
+The `one-frontend` Dockerfile builds the SPA with `VITE_API_BASE_URL=/api/v1` by default and serves it from Nginx. Nginx proxies `/api/` to the `api` container, giving browser clients a same-origin base. For phone access, expose the active frontend port through Tailscale Serve (the current checkout uses `4175`; fresh Docker uses `4173`) and use the resulting HTTPS origin for browser and iOS configuration. The backend's LiveKit URL must also be a phone-reachable `wss://` address; a convenient local-only setup is a second Tailscale Serve entry for `127.0.0.1:7880` on HTTPS port `8444`, then `ONE_LIVEKIT_URL=wss://<tailnet-host>:8444`. This keeps camera permissions in a secure context while retaining the self-hosted, subscription-free LiveKit.

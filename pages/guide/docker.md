@@ -8,7 +8,15 @@ test -f .env || cp .env.example .env # create/fill locally; never commit it
 docker compose up --build -d api frontend
 ```
 
-The API is bound to `127.0.0.1:8000`; the fresh frontend default is `127.0.0.1:4173`; LiveKit publishes `7880`, `7881`, and `7882/udp` for LAN WebRTC testing; Caddy is loopback-only on `8443` (HTTPS) and `8080` (HTTP) by default. Override `ONE_CADDY_HTTPS_PORT` or `ONE_CADDY_HTTP_PORT` only for a controlled ingress. The stack also creates named volumes for object data, Postgres, MinIO, and Caddy state. Port `4175` is a separate existing frontend and is intentionally not changed by this setup.
+The API is bound to `127.0.0.1:8000`; the fresh frontend default is
+`127.0.0.1:4173`; LiveKit publishes `7880`, `7881`, and `7882/udp` for LAN
+WebRTC testing; Caddy is loopback-only on `8443` (HTTPS) and `8080` (HTTP) by
+default. Override `ONE_CADDY_HTTPS_PORT` or `ONE_CADDY_HTTP_PORT` only for a
+controlled ingress. The stack also creates named volumes for object data,
+Postgres, MinIO, and Caddy state. Port `4175` is a separate existing frontend
+and is intentionally not changed by this setup. `ONE_FRONTEND_BIND` controls
+the host interface; it defaults to `127.0.0.1` and should only be set to
+`0.0.0.0` for a trusted same-LAN test.
 
 When this Compose project already has the separate `one-frontend` container on
 `4175`, do not run the `frontend` service from the command above (that would
@@ -32,11 +40,21 @@ Replace every `change-me` value and the `ONE_POSTGRES_*`/`ONE_MINIO_*` Compose c
 
 ## Tailscale Serve
 
-After the frontend is up, expose only the web origin to a private tailnet:
+After the frontend is up, expose only the web origin to a private tailnet. The
+command must target the port you actually started (the current local checkout
+uses `4175`; a fresh stack uses `4173`):
 
 ```bash
-tailscale serve --bg http://127.0.0.1:4173
+tailscale serve --bg http://127.0.0.1:4175
+tailscale serve --bg --https=8444 http://127.0.0.1:7880
 tailscale serve status
 ```
 
-Open the reported HTTPS URL on a phone. Configure iOS with that URL plus `/api/v1` through the `ONE_API_BASE_URL` build setting. Keep Caddy and Tailscale responsibilities separate: Caddy provides the local reverse-proxy/TLS policy, while Tailscale Serve provides tailnet reachability.
+Open the reported website HTTPS URL on a phone. Configure iOS with that URL
+plus `/api/v1` through the `ONE_API_BASE_URL` build setting. For a phone camera
+or LiveKit viewer, set `ONE_LIVEKIT_URL` in the backend `.env` to the reported
+Tailscale LiveKit URL (`wss://<tailnet-host>:8444`) and restart `api`;
+`localhost` on the phone means the phone. Keep Caddy and Tailscale
+responsibilities separate: Caddy provides the optional local reverse-proxy/TLS
+policy, while Tailscale Serve provides tailnet reachability. Both Serve entries
+are private to the tailnet; do not use Funnel for household video.

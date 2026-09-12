@@ -33,4 +33,10 @@ The assistant receives only active plans and bounded check-in rows for the selec
 
 ## Client status
 
-The web `/dashboard/family` and iOS care-circle surfaces currently use mock/synthetic people and dose rows to make role semantics visible in a demo. The controls are useful for UX review, but add a live persistence adapter, invitation delivery, audit/rights workflow, and real-subject governance before relying on them for care.
+The web `/dashboard/family` and iOS care-circle surfaces use the live family and
+medication endpoints when authenticated. Each can select a different household
+subject, display date-specific reminder slots, invite another caregiver, edit a
+plan, acknowledge a check-in, and archive a plan without deleting its history.
+Synthetic rows remain available only in explicit demo mode. Invitation delivery,
+representation evidence, notifications, audit/rights workflow, and real-subject
+governance still require a production adapter and approved DPIA.

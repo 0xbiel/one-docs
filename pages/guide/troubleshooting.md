@@ -30,6 +30,24 @@ disabled, unavailable, rate-limited, or returns an invalid response.
 
 The browser publisher asks for permission only after the explicit consent checkbox. Re-enable camera and microphone for the origin in browser settings, reload, and retry. A demo placeholder is not evidence of a live stream.
 
+## The website does not open on a phone
+
+`127.0.0.1` is the Mac itself, not the phone. Keep the frontend loopback-bound
+and proxy it privately with Tailscale:
+
+```bash
+tailscale serve --bg http://127.0.0.1:4175 # use 4173 for a fresh stack
+tailscale serve --bg --https=8444 http://127.0.0.1:7880
+tailscale serve status
+```
+
+Open the website HTTPS URL shown by `tailscale serve status`. Set the backend
+`ONE_LIVEKIT_URL` to the corresponding `wss://<tailnet-host>:8444` URL and
+restart the API before testing camera publishing. If you intentionally use a
+same-Wi-Fi HTTP test, set `ONE_FRONTEND_BIND=0.0.0.0` and open the Mac LAN IP;
+camera APIs may still refuse that insecure origin, so Tailscale HTTPS is the
+recommended path.
+
 ## RoomPlan is unavailable
 
 RoomPlan requires supported Apple hardware; Simulator intentionally reports unsupported. The iOS flow retains a manual-zone fallback so the product can still represent approximate places.
@@ -46,6 +64,11 @@ curl -s http://127.0.0.1:8000/api/v1/health
 
 The API applies `migrations/001_initial.sql` and `migrations/002_family_mode.sql` on startup and reports `database_status=ok` only after the connection succeeds. A local manual run needs `pip install -e '.[postgres]'`; the Docker image already installs that extra. Do not point a container at `127.0.0.1` for PostgreSQL—the Compose hostname is `postgres`.
 
-## Family or medication controls look synthetic
+## Family or medication controls look empty
 
-The backend has consent-gated family, medication plan, reminder, check-in, and family-assistant routes. The web and iOS surfaces currently seed household people and dose rows in local/demo state; add a live adapter and persistence verification before describing a reminder as remotely saved.
+The backend has consent-gated family, medication plan, reminder, check-in, and
+family-assistant routes. In live mode, complete onboarding's `family_mode` and
+`medication_management` choices for the selected subject, then reload the Family
+view. Plans created there are persisted in PostgreSQL; archiving sets
+`active=false` so history is retained. Demo rows appear only when
+`VITE_DEMO_MODE=true` (or the iOS runtime is explicitly configured for demo).
