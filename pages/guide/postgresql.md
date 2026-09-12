@@ -34,6 +34,8 @@ health responses or logs.
 The application deliberately uses qmark (`?`) placeholders in its small
 `Database` interface. The PostgreSQL adapter translates them to `%s` at the
 boundary and maps `IS ?` to PostgreSQL's null-safe `IS NOT DISTINCT FROM`.
+Literal percent signs are escaped at the same boundary so `LIKE` clauses keep
+their meaning under psycopg.
 Transactions yield a guarded connection facade so direct `conn.execute(...)`
 calls in invite acceptance and deletion workflows receive the same translation
 and commit/rollback behavior. PostgreSQL rows are returned as dictionaries,
