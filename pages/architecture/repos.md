@@ -22,6 +22,6 @@ The three repositories are intentionally separate. This page is based on the cur
 
 ## Client boundary
 
-The web API client exposes live `/api/v1` reads for `/me`, cameras, scene/maps, objects, events, consent, privacy, and LiveKit token issuance, while family people/plans remain synthetic client fixtures. The iOS `AppStore.demo` supplies sample events, zones, object memory, consent rows, caregiver accounts, and medication doses for the native vertical slice.
+The web API client exposes live `/api/v1` reads for `/me`, cameras, scene/maps, objects, events, consent, privacy, LiveKit token issuance, family members, and subject-scoped medication reminders. The web still uses local presentation rows for editing/invitation affordances. The iOS `AppStore.demo` supplies sample events, zones, object memory, consent rows, caregiver accounts, and medication doses; live iOS auth, invitation acceptance, onboarding consent, and logout are wired while family/map reads remain a planned adapter boundary.
 
 `one/contracts/openapi.json` is generated from the FastAPI app by `one/scripts/generate_openapi.py`. The frontend’s `npm run generate:api` consumes the sibling artifact when the repositories are checked out together and otherwise uses its pinned `contracts/openapi.json` snapshot; CI checks the generated `src/api/schema.d.ts` for drift. `one-ios/contracts/openapi.json` pins the same reviewed contract for standalone inspection while the current Swift transport remains a small manual adapter. Update both snapshots and their clients when the backend contract tag changes.

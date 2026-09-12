@@ -6,7 +6,7 @@
 
 `src/api/client.ts` reads `VITE_API_BASE_URL` and a demo-mode flag. Demo mode supplies deterministic scenes, objects, events, device status, pairing, and assistant copy so a presentation does not depend on hardware. Live mode uses the FastAPI contract for pairing, event reads, consent, privacy requests, and LiveKit token issuance where implemented.
 
-The UI also maps backend `object_observed` to “Object observed” / “non-diagnostic” language. Family mode presents multiple household caregiver roles, assigned reminder responsibility, and acknowledgement status. The current family data is synthetic client state; add a live adapter before describing plans or invitations as persisted. The assistant copy deliberately links answers to evidence and says “Not a diagnosis.”
+The UI also maps backend `object_observed` to “Object observed” / “non-diagnostic” language. Family mode presents multiple household caregiver roles, a real live-member selector when `family_mode` is authorized, subject-scoped reminder reads, assigned responsibility, and acknowledgement status. Editing/invitation affordances and the demo dataset remain local presentation state; the assistant copy deliberately links answers to evidence and says “Not a diagnosis.”
 
 ## Browser publisher
 

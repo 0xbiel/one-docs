@@ -4,7 +4,7 @@
 
 ```bash
 cd one
-cp .env.example .env # create and fill this locally; never commit it
+test -f .env || cp .env.example .env # create/fill locally; never commit it
 docker compose up --build api frontend
 ```
 

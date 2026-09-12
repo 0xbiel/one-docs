@@ -1,6 +1,6 @@
 # Consent & privacy operations
 
-Consent is explicit, purpose-scoped, and tied to a subject. Use the exact purpose strings used by the running backend (`video_capture`, `family_mode`, and `medication_management` are the current flows). A caregiver role does not automatically establish legal representation.
+Consent is explicit, purpose-scoped, and tied to a subject. Use the exact purpose strings used by the running backend: `video_capture`, `audio_capture`, `family_mode`, and `medication_management` for the current onboarding flow (with `family_assistant` additionally required by the bounded assistant route). A caregiver role does not automatically establish legal representation.
 
 ## `GET /api/v1/homes/{home_id}/consents`
 

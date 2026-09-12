@@ -1,85 +1,58 @@
 # Quickstart
 
-This path runs the current local MVP: a SQLite FastAPI backend and a React/Vite frontend. It does not require PostgreSQL, Redis, MinIO, LiveKit, or a downloaded vision model. For a same-origin Docker run, use the Docker path below instead of manually wiring browser CORS.
+This path runs the current local MVP. Start with Docker: it provides the same-origin frontend/API path and composed local dependencies. Manual Python/Vite startup is a fallback for development only.
 
-## 1. Start the backend
+## 1. Start Docker (recommended)
+
+From the repository root:
 
 ```bash
 cd one
-python -m venv .venv
-source .venv/bin/activate
-pip install -e '.[dev]'
-cp .env.example .env # if the example file exists in your checkout
-uvicorn app.main:app --reload --port 8000
-```
-
-The API is available at `http://localhost:8000`. Verify it:
-
-```bash
-curl http://localhost:8000/api/v1/health
-```
-
-Expected shape:
-
-```json
-{"status":"ok","database":"sqlite","local_inference_model":"qwen3.6-35b-a3b"}
-```
-
-OpenAPI is generated at [`/api/v1/openapi.json`](http://localhost:8000/api/v1/openapi.json).
-
-## 2. Start the web app
-
-In a second terminal:
-
-```bash
-cd one-frontend
-npm ci
-npm run dev
-```
-
-Open the Vite URL (normally `http://localhost:5173`). Without a stored session the dashboard uses its demo data, which makes the product walkthrough deterministic. For live API calls, set `VITE_DEMO_MODE=false` and `VITE_API_BASE_URL=http://localhost:8000/api/v1` in `one-frontend/.env`.
-
-The frontend’s default `.env.example` uses `VITE_API_BASE_URL=/api/v1` for Docker. Its Nginx config proxies that path to FastAPI, so the browser stays on one origin.
-
-## Docker and same-origin access
-
-From `one/`:
-
-```bash
+test -f .env || cp .env.example .env
 docker compose up --build api frontend
 ```
 
-Open `http://127.0.0.1:4173`. The frontend container serves the SPA and proxies `/api/*` to the API container. Set `ONE_FRONTEND_DEMO_MODE=true` only for deterministic synthetic data; the compose default is live mode.
+Open `http://127.0.0.1:4173`. The frontend proxies `/api/*` to FastAPI. The API is internal port `8000`; LiveKit uses `7880`, `7881`, and `7882/udp`. Keep port `4175` untouched; it is reserved for the separate app workflow. If `4173` is occupied, use alternate frontend port `4174`. Verify with `curl http://127.0.0.1:4173/api/v1/health`.
 
-For phone access on a private tailnet, install Tailscale on the host and expose the web container:
+## 2. Create an account and sign in
+
+ONE's current account creation is pairing bootstrap, not password registration:
+
+1. Open `/create-account` to create the caregiver household account. The form calls `POST /api/v1/pairing/start`, completes the returned code, and routes to `/onboarding`.
+2. Onboarding asks for four purpose choices: daily check-in support (`audio_capture`), room/camera data (`video_capture`), medication organization (`medication_management`), and family sharing (`family_mode`). Complete every choice before dashboard access; the browser stores a marker scoped to `home_id` + `user_id`.
+3. Returning caregivers use `/login` and enter a pairing/session code. The browser exchanges it at `/api/v1/pairing/complete`.
+4. The live web client stores bearer token, home ID, and user ID in `sessionStorage`, then uses the token for API/SSE requests. The onboarding marker is only a device-local UX gate; it is not proof of consent, legal representation, or controller approval.
+
+There is no password login, refresh-token, email verification, or external identity provider. Codes expire after ten minutes and are single-use. Logout is `DELETE /api/v1/sessions/current`, followed by clearing session storage and stopping active streams.
+
+## 3. Household invite and onboarding
+
+An admin/caregiver with `family_mode` consent creates an invite at `POST /api/v1/homes/{home_id}/family/invites`; the recipient accepts at `POST /api/v1/family/invites/accept`. Confirm home/role with `/api/v1/me`, record only understood purposes (`audio_capture`, `video_capture`, `family_mode`, and `medication_management` where applicable), pair a publisher through `/join/:code`, grant camera/microphone permission after consent, and calibrate RoomPlan or use manual zones.
+
+Caregivers can support multiple people and, once memberships exist, multiple homes; each request is scoped to the token's `home_id` and selected subject. Cross-subject reads require caregiver/admin role and purpose consent. Web privacy/account controls are under `/dashboard/privacy`; iOS groups account/session and privacy controls under Account/Settings. Some family/medication rows remain synthetic; an invite code is not proof of legal representation.
+
+## 4. iOS simulator and Tailscale
+
+The iOS simulator uses `http://127.0.0.1:8000/api/v1` as deterministic demo mode and cannot provide RoomPlan/LiDAR. A physical iPhone needs `ONE_API_BASE_URL` set to a host-reachable HTTPS URL ending in `/api/v1`; `localhost` on the phone means the phone.
+
+For private remote testing, run `tailscale serve --bg http://127.0.0.1:4173` then `tailscale serve status`. Use the reported HTTPS URL for iOS/browser. LiveKit separately needs a phone-reachable trusted `wss://` endpoint; Tailscale does not replace media/authentication.
+
+## Fallback: manual backend and Vite
 
 ```bash
-tailscale serve --bg http://127.0.0.1:4173
-tailscale serve status
+cd one
+python -m venv .venv && source .venv/bin/activate
+pip install -e '.[dev]'
+test -f .env || cp .env.example .env
+uvicorn app.main:app --reload --port 8000
 ```
 
-Use the HTTPS URL shown by `tailscale serve status` for browser testing and as the iOS `ONE_API_BASE_URL` base, keeping the `/api/v1` suffix (for example, `https://one-host.<tailnet>.ts.net/api/v1`). Tailscale Serve is a network setup step, not an identity or production deployment guarantee.
+In a second terminal: `cd one-frontend && npm ci && npm run dev`. Vite normally uses `5173`; use `4174` only for the alternate workflow. Do not use or rebind `4175`. Set `VITE_DEMO_MODE=false` and `VITE_API_BASE_URL=http://localhost:8000/api/v1` for live calls.
 
-## 3. Pair a device
+## Pair a publisher
 
-The backend pairing flow is intentionally short-lived:
-
-```bash
-curl -s http://localhost:8000/api/v1/pairing/start \
-  -H 'Content-Type: application/json' \
-  -d '{"display_name":"Demo caregiver","home_name":"ONE Home","role":"caregiver"}'
-```
-
-Copy the returned `pairing_code` immediately. Complete it once:
-
-```bash
-curl -s http://localhost:8000/api/v1/pairing/complete \
-  -H 'Content-Type: application/json' \
-  -d '{"code":"REPLACE_WITH_CODE"}'
-```
-
-Send the returned bearer token on protected requests. Pairing codes expire after 10 minutes and are stored hashed, not as plaintext.
+An authenticated admin/caregiver starts `/api/v1/homes/{home_id}/pairing/start`; complete its code once at `/api/v1/pairing/complete`. Publisher accounts can publish media but cannot manage home metadata or family settings.
 
 ## What “working” means here
 
-You have a valid local run when health returns `ok`, the web dashboard loads, and the demo can navigate through dashboard, family, map, events, assistant, privacy, join, and publisher routes. A loaded dashboard is not proof that a real camera, LiveKit room/subscriber, external model, or production database is connected.
+Health `ok`, a loaded dashboard, and navigable routes prove a local demo only—not camera hardware, LiveKit subscriber connectivity, external model availability, or production database readiness.

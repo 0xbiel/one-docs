@@ -33,7 +33,7 @@ Both codes are exchanged at `POST /api/v1/pairing/complete` with `{ "code": "123
 }
 ```
 
-`expires_in` comes from `ONE_SESSION_TTL_MINUTES` (60 by default); it is not a refresh lifetime. Invalid, expired, or reused codes return `400`. Do not print codes or tokens in logs, URLs, screenshots, analytics, or support tickets.
+`expires_in` comes from `ONE_SESSION_TTL_MINUTES` (60 by default); it is not a refresh lifetime. The bootstrap `pairing/start` response includes the requested `role`; the code-exchange response intentionally does not, so clients use authenticated `/api/v1/me` for authoritative role. Invalid, expired, or reused codes return `400`. Do not print codes or tokens in logs, URLs, screenshots, analytics, or support tickets.
 
 Family invitations use `family_invites` and `POST /api/v1/family/invites/accept`; they also return a bearer session after a single-use code. They are synthetic local flows, not verified email invitations.
 
@@ -58,9 +58,11 @@ Validation failures are structured `422` responses with `error`, `request_id`, a
 
 ## Web login, storage, and logout UX
 
-The React client uses the pairing code as its passwordless login. `/login`
-provides the caregiver-facing sign-in form; `/join` and `/join/:code` remain a
-public camera/publisher pairing surface and sanitize input to six digits. A
+The React client uses the pairing code as its passwordless login. `/create-account`
+is the caregiver-facing household bootstrap form; it calls `pairing/start`,
+completes the returned code, and then opens onboarding. `/login` is the existing
+caregiver sign-in form for a code/session. `/join/:code` remains the public
+publisher pairing surface and sanitizes input to six digits. A
 successful exchange saves `one_access_token`, `one_home_id`, and `one_user_id`
 in `sessionStorage`. API and SSE requests read the token and add a bearer
 header. On reload, `GET /api/v1/me` validates the session before protected data
@@ -69,14 +71,22 @@ clears all browser session storage in `finally`; the shell also stops publisher
 tracks/connections, clears the React Query cache, and navigates to `/login`.
 Closing the tab clears session storage by browser semantics.
 
-### Route-guard audit
+### Route-guard and onboarding audit
 
-The current `App.tsx` guards every route except `/login` and `/join*` when
+The current `App.tsx` guards every dashboard route except `/login`, `/create-account`,
+and `/join*` when
 `VITE_DEMO_MODE=false`. A missing token renders the login screen; a token is
 held at a loading boundary while `/me` validates it; a `401` clears the token
-and returns to login. This is a client UX guard, not a replacement for API
-authorization. Camera permission is requested only from the explicit publisher
-surface after the user checks purpose-specific consent.
+and returns to login. A valid session without the scoped onboarding marker is
+redirected to `/onboarding` before dashboard access. The marker is keyed by
+`home_id` and `user_id` in local storage, so completing onboarding for one
+account/home does not silently complete it for another. Onboarding records
+purpose choices for daily check-in support (`audio_capture`), room/camera data
+(`video_capture`), medication organization (`medication_management`), and
+family sharing (`family_mode`); these choices are UX state and must still be
+persisted through purpose-specific consent API calls before protected
+processing. Camera permission is requested only from the explicit publisher
+surface after consent.
 
 ## iOS login and storage audit
 

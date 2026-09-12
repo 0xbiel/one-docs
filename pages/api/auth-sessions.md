@@ -16,13 +16,13 @@ Request (`PairStart`):
 {"display_name":"Demo resident","email":"demo@example.invalid","home_name":"ONE Home","role":"resident"}
 ```
 
-`display_name` is required (1–120 chars). `email` is optional (max 254), `home_name` defaults to `ONE Home`, and `role` is `admin`, `resident`, or `caregiver` (default `admin`). The response contains `pairing_code`, `expires_in_seconds`, `home_id`, and `user_id`. Treat the code as secret and do not log it.
+`display_name` is required (1–120 chars). `email` is optional (max 254), `home_name` defaults to `ONE Home`, and `role` is `admin`, `resident`, or `caregiver` (default `admin`). The response contains `pairing_code`, `expires_in_seconds`, `home_id`, `user_id`, and `role`. Treat the code as secret and do not log it.
 
 ## `POST /api/v1/pairing/complete`
 
 Operation ID: `pairing_complete_api_v1_pairing_complete_post`. Public code exchange. Request is `PairComplete`, with a required six-digit `code`. A valid code is marked used and returns `access_token`, `token_type: bearer`, `expires_in`, `home_id`, and `user_id`.
 
-Invalid, expired, or already-used codes return `400`. The current response does not include `role`; clients should call `/api/v1/me` after storing the session when role-aware UI is needed. See [Authentication and session lifecycle](/security/authentication) for the web/iOS audit and known contract drift.
+Invalid, expired, or already-used codes return `400`. The code-exchange response intentionally does not include `role`; clients should call `/api/v1/me` after storing the session when role-aware UI is needed. The bootstrap response above does include the requested role.
 
 ## `POST /api/v1/homes/{home_id}/pairing/start`
 
