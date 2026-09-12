@@ -11,7 +11,7 @@ import { vocs } from 'vocs/vite'
 const viteOptions = {
   configFile: false,
   optimizeDeps: {
-    include: ['dayjs', '@braintree/sanitize-url'],
+    include: ['dayjs', '@braintree/sanitize-url', 'fastdom'],
   },
   resolve: {
     alias: [

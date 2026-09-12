@@ -72,3 +72,18 @@ family-assistant routes. In live mode, complete onboarding's `family_mode` and
 view. Plans created there are persisted in PostgreSQL; archiving sets
 `active=false` so history is retained. Demo rows appear only when
 `VITE_DEMO_MODE=true` (or the iOS runtime is explicitly configured for demo).
+
+## Vocs reports a missing export from a browser dependency
+
+Run the docs through the repository scripts rather than invoking Vocs directly:
+
+```bash
+npm run dev
+npm run build
+```
+
+The wrapper keeps Mermaid's CommonJS dependencies (`dayjs`,
+`@braintree/sanitize-url`, and `fastdom`) in Vite's browser optimizer and
+bridges the sanitizer's named export. This avoids browser errors such as
+`does not provide an export named default` or `sanitizeUrl` after a fresh
+dependency install.
