@@ -40,6 +40,10 @@ Operation ID: `device_pairing_start_api_v1_homes__home_id__pairing_start_post`. 
 
 Publisher pairing is not a general household invite. Publisher accounts are excluded from family member lists and cannot manage home metadata.
 
+## `GET /api/v1/homes/{home_id}/pairing/{pairing_id}/status`
+
+Operation ID: `device_pairing_status_api_v1_homes__home_id__pairing__pairing_id__status_get`. Admin/caregiver operation used by the dashboard pairing modal. It returns the device-scoped `pairing_id`, `home_id`, expiry, `device` summary, and `status` (`pending`, `connected`, or `expired`). It never returns the pairing code. `connected` records that the one-time code was consumed; LiveKit media presence is a separate signal and is not implied by this response.
+
 ## `DELETE /api/v1/sessions/current`
 
 Operation ID: `logout_api_v1_sessions_current_delete`. Bearer operation that deletes the session represented by the current `Authorization` header and returns `{ "ok": true }`. The backend stores only a hash of the token.

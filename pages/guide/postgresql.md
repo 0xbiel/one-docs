@@ -15,9 +15,13 @@ ONE_DATABASE_URL=postgresql://one:<password>@postgres:5432/one
 ```
 
 The API image installs `.[postgres]` and copies `migrations/`. On startup it
-applies `001_initial.sql` and `002_family_mode.sql` in order and records the
-applied versions in `schema_migrations`. The migration statements are
-idempotent, and the startup transaction rolls back if any statement fails.
+applies the numbered migrations (`001_initial.sql` through the current
+camera/RoomPlan and email-identity migrations) in order and records the
+applied versions in `schema_migrations`. Full-line SQL comments are stripped
+by the portable splitter before psycopg executes each statement, so a
+commented migration remains valid on both SQLite and PostgreSQL. The
+migration statements are idempotent, and the startup transaction rolls back if
+any statement fails.
 
 ```bash
 cd one
