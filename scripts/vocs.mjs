@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url'
 import react from '@vitejs/plugin-react'
 import * as vite from 'vite'
 import { resolveConfig } from 'vocs/config'
@@ -9,7 +10,17 @@ import { vocs } from 'vocs/vite'
 // browsers reject its missing `default` export at runtime.
 const viteOptions = {
   configFile: false,
-  optimizeDeps: { include: ['dayjs'] },
+  optimizeDeps: {
+    include: ['dayjs', '@braintree/sanitize-url'],
+  },
+  resolve: {
+    alias: [
+      {
+        find: '@braintree/sanitize-url',
+        replacement: fileURLToPath(new URL('./sanitize-url-compat.mjs', import.meta.url)),
+      },
+    ],
+  },
 }
 
 const command = process.argv[2] ?? 'dev'
