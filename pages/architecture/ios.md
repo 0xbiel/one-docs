@@ -6,7 +6,7 @@ The iOS app is a native SwiftUI vertical slice with resident, caregiver, and fam
 - **Resident:** Today, Assistant, and Account tabs.
 - **Family:** Care-circle members, least-privilege roles, shared medication reminders, and caregiver assistant actions.
 
-`AppStore.demo` seeds the UI with a home map, zones, a blue mug object, sample events, consent records, multiple caregiver accounts, and medication doses. In live mode, pairing/bootstrap, invitation acceptance, session restoration, onboarding consent writes, and logout use the FastAPI contract; the map, family rows, and medication presentation remain local fixtures until their full read/write adapters are completed.
+`AppStore.demo` seeds the UI with a home map, zones, a blue mug object, sample events, consent records, multiple caregiver accounts, and medication doses. In live mode, passwordless email challenge/verification, invitation acceptance tied to the invited email, session restoration in Keychain, onboarding consent writes, and logout use the FastAPI contract. Email identity is the durable household boundary when a person changes phones; camera pairing remains a separate device-scoped flow. The local development outbox exposes a one-time code because no mail subscription is required for the MVP.
 
 `RuntimeConfiguration` reads `ONE_API_BASE_URL` from the generated Info.plist and otherwise uses `http://127.0.0.1:8000/api/v1` in demo mode. For a tailnet deployment, set the build setting to the Tailscale HTTPS URL plus `/api/v1`; keep certificates and tokens out of source control. Session material belongs in the Keychain abstraction, and local artifacts can use the AES-GCM helper.
 

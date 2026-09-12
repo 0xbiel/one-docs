@@ -28,7 +28,7 @@ ONE's current account creation is pairing bootstrap, not password registration:
 3. Returning caregivers use `/login` and enter a pairing/session code. The browser exchanges it at `/api/v1/pairing/complete`. People joining an existing home use the `/join-household` link and invitation code.
 4. The live web client stores bearer token, home ID, and user ID in `sessionStorage`, then uses the token for API/SSE requests. The onboarding marker is only a device-local UX gate; it is not proof of consent, legal representation, or controller approval.
 
-There is no password login, refresh-token, email verification, or external identity provider. Codes expire after ten minutes and are single-use. Logout is `DELETE /api/v1/sessions/current`, followed by clearing session storage and stopping active streams.
+There is no password login, refresh-token, or external identity provider. Live account access uses a normalized email plus a ten-minute single-use verification code from `POST /api/v1/auth/email/request` and `POST /api/v1/auth/email/verify`; development/test responses show the code through the local outbox, while production requires a mail adapter. Legacy pairing codes remain for camera/device flows. Logout is `DELETE /api/v1/sessions/current`, followed by clearing client credentials and stopping active streams.
 
 ## 3. Household invite and onboarding
 
