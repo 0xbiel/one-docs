@@ -16,6 +16,15 @@ The UI also maps backend `object_observed` to “Object observed” / “non-dia
 
 The publisher asks for `navigator.mediaDevices.getUserMedia({ video: true, audio: true })` only after consent. It stops tracks on unmount. In live mode it requests a backend-issued LiveKit token and connects with adaptive stream and dynacast; in demo mode it shows a privacy-safe placeholder. Caregivers start a publisher pairing from the dashboard: the one-time code stays in a modal with copy/regenerate controls, while the public `/join/:code` route remains the camera's separate exchange surface. `/dashboard/account` exposes the current session/home, privacy link, and explicit sign-out.
 
+### Onboarding consent controls
+
+Each onboarding purpose presents the two available decisions, **Allow** and
+**Not now**, as one grouped row. On narrow phone viewports the same row becomes
+a short horizontal scroller rather than stacking choices into separate rows;
+both options remain native radio controls with visible labels and keyboard focus
+states. Selecting **Not now** is a valid purpose-specific choice and does not
+imply that another purpose was declined.
+
 ## Room view
 
 The caregiver map has a Three.js 3D overview and a 2D accessible fallback. Markers distinguish an estimated point from a zone fallback; selecting an object exposes confidence and radius rather than false precision. The LiveKit viewer surface and token path are present, but a production subscriber flow is not verified.
