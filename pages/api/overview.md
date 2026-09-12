@@ -9,7 +9,7 @@ This section is an implementation reference, not a product promise. Route names,
 | Area | Routes | Auth / gate |
 | --- | --- | --- |
 | Health | `GET /api/v1/health` | Public |
-| Pairing/session | `POST /api/v1/pairing/start`, `POST /api/v1/pairing/complete`, `DELETE /api/v1/sessions/current`, `POST /api/v1/homes/{home_id}/pairing/start` | Bootstrap / one-time code / bearer |
+| Identity, pairing/session | `POST /api/v1/auth/email/request`, `POST /api/v1/auth/email/verify`, `POST /api/v1/pairing/start`, `POST /api/v1/pairing/complete`, `DELETE /api/v1/sessions/current`, `POST /api/v1/homes/{home_id}/pairing/start` | Persistent email challenge / device code / bearer |
 | Identity/home | `GET /api/v1/me`, `GET /api/v1/homes/{home_id}/runtime` | Bearer + home membership |
 | Setup | Cameras, rooms, maps, scene, calibrations | Bearer + home membership; publisher blocked for controls |
 | Objects/vision | Objects, last-seen, observations, `POST /api/v1/homes/{home_id}/vision/frames` | Bearer; vision also needs active `video_capture` consent |
