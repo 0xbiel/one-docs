@@ -10,6 +10,12 @@ docker compose up --build -d api frontend
 
 The API is bound to `127.0.0.1:8000`; the fresh frontend default is `127.0.0.1:4173`; LiveKit publishes `7880`, `7881`, and `7882/udp` for LAN WebRTC testing; Caddy is loopback-only on `8443` (HTTPS) and `8080` (HTTP) by default. Override `ONE_CADDY_HTTPS_PORT` or `ONE_CADDY_HTTP_PORT` only for a controlled ingress. The stack also creates named volumes for object data, Postgres, MinIO, and Caddy state. Port `4175` is a separate existing frontend and is intentionally not changed by this setup.
 
+When this Compose project already has the separate `one-frontend` container on
+`4175`, do not run the `frontend` service from the command above (that would
+reconcile its port to the fresh default). Run `docker compose up --build -d
+api` and keep using `http://127.0.0.1:4175`. Start `api frontend` only for a
+fresh checkout where `4173` is the intended website port.
+
 ## Service roles
 
 | Service | Role in the current compose file | Status boundary |

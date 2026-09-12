@@ -14,6 +14,11 @@ docker compose up --build -d api frontend
 
 Compose defaults the API to `postgresql://one:change-me@postgres:5432/one` and applies the tracked migrations before serving requests. If an existing `.env` still contains the old `ONE_DATABASE_URL=sqlite:///...` line, change it to the PostgreSQL URL (or remove the line so Compose can use its default); do not overwrite an existing `.env` blindly. Open `http://127.0.0.1:4173`. The frontend proxies `/api/*` to FastAPI. Verify both the site and the selected database with `curl http://127.0.0.1:4173/api/v1/health`; a healthy Docker run reports `"database":"postgresql"`. The API is internal port `8000`; LiveKit uses `7880`, `7881`, and `7882/udp`. Keep port `4175` untouched; it is a separate existing Docker frontend. If `4173` is occupied, use alternate frontend port `4174`.
 
+If the separate existing frontend is already running on `4175`, leave that
+container untouched and start only the API with `docker compose up --build -d
+api`; use `http://127.0.0.1:4175` for the website. The `api frontend` command
+above is for a fresh stack whose frontend should use the default `4173` port.
+
 ## 2. Create an account and sign in
 
 ONE's current account creation is pairing bootstrap, not password registration:
