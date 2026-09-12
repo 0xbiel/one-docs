@@ -1,0 +1,29 @@
+# Demo guide
+
+This is the repeatable, honest path for a short ONE walkthrough. Use demo mode unless you have already verified a local backend, browser permission, and the intended network boundary. The smoothest setup is Docker plus same-origin `/api/v1`; use direct Vite only when iterating on the frontend.
+
+## The four-minute story
+
+1. **Start at Dashboard.** Show “Meaningful moments” and “Where things were last seen.” Explain that each item is an observation linked to evidence, not a diagnosis.
+2. **Open Map.** Select an object and point out the confidence radius. Switch to the accessible 2D floor-plan fallback. Explain that low-confidence projections become a named zone.
+3. **Open Events.** Open a moment to show the source-linked explanation and confidence. The current demo data is deterministic and illustrative.
+4. **Open Assistant.** Ask “Where were the keys last seen?” or “What changed from yesterday?” Answers in demo mode are scripted UI behavior; a live backend can provide the local model summary path.
+5. **Open Privacy.** Toggle a consent, pause camera and microphone, then show export/deletion controls. This is the product’s control surface, not a decorative settings page.
+6. **Open Family.** Show multiple household caregiver accounts, role badges, assigned reminder responsibility, and acknowledgement status. Explain that the current client rows are synthetic demo state even though the backend has bounded family and medication contracts.
+7. **Open Join / Publisher.** Create a short pairing code, then show the explicit consent checkbox before the browser requests camera and microphone permissions.
+
+## If you have the backend running
+
+Set the frontend API base URL and disable demo mode. Pair a caregiver session first, then use the returned session in the same browser. The current API client reads `/me`, cameras, scene/maps, objects, events, consent, privacy, and LiveKit token routes. The family plan UI still uses synthetic rows and future-facing visual affordances; it is not evidence of remote persistence.
+
+For a phone walkthrough, run `docker compose up --build api frontend`, then `tailscale serve --bg http://127.0.0.1:4173` and open the HTTPS URL shown by `tailscale serve status`. Set iOS `ONE_API_BASE_URL` to that URL plus `/api/v1`. Verify the URL and permissions before recording a demo.
+
+## Claims to avoid
+
+- Do not call object observations a diagnosis or medical prediction.
+- Do not imply that the current deterministic detector is OWLv2 inference.
+- Do not claim production PostgreSQL migrations, durable Redis event delivery, or a production LiveKit deployment.
+- Do not claim a working LiveKit subscriber: the current client has token/publisher scaffolding and a viewer surface, but not a verified production subscriber path.
+- Do not claim medication plans, caregiver invitations, or check-ins are persisted in the clients; current family data is mock/synthetic.
+- Do not imply that a demo placeholder is a real camera stream.
+- Do not show secrets, bearer tokens, local IPs, or real resident data on screen.

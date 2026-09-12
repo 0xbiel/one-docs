@@ -1,0 +1,23 @@
+{
+  "name": "one-docs",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "engines": {
+    "node": ">=22.15"
+  },
+  "scripts": {
+    "dev": "vocs dev",
+    "build": "vocs build",
+    "preview": "vocs preview"
+  },
+  "dependencies": {
+    "@vocs/twoslash-rust": "^0.1.0",
+    "mermaid": "^11.17.2",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "vite": "^8.3.0",
+    "vocs": "^2.9.0",
+    "waku": "^1.0.0-rc.0"
+  }
+}

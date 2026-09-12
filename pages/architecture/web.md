@@ -1,0 +1,21 @@
+# Web app
+
+`one-frontend` is a Vite + React + TypeScript application. Its shell is organized around caregiver review: dashboard, family, map, events, assistant, live viewer, calibration, privacy, and a publisher route.
+
+## Live versus demo behavior
+
+`src/api/client.ts` reads `VITE_API_BASE_URL` and a demo-mode flag. Demo mode supplies deterministic scenes, objects, events, device status, pairing, and assistant copy so a presentation does not depend on hardware. Live mode uses the FastAPI contract for pairing, event reads, consent, privacy requests, and LiveKit token issuance where implemented.
+
+The UI also maps backend `object_observed` to “Object observed” / “non-diagnostic” language. Family mode presents multiple household caregiver roles, assigned reminder responsibility, and acknowledgement status. The current family data is synthetic client state; add a live adapter before describing plans or invitations as persisted. The assistant copy deliberately links answers to evidence and says “Not a diagnosis.”
+
+## Browser publisher
+
+The publisher asks for `navigator.mediaDevices.getUserMedia({ video: true, audio: true })` only after consent. It stops tracks on unmount. In live mode it requests a backend-issued LiveKit token and connects with adaptive stream and dynacast; in demo mode it shows a privacy-safe placeholder.
+
+## Room view
+
+The caregiver map has a Three.js 3D overview and a 2D accessible fallback. Markers distinguish an estimated point from a zone fallback; selecting an object exposes confidence and radius rather than false precision. The LiveKit viewer surface and token path are present, but a production subscriber flow is not verified.
+
+## Docker route
+
+The `one-frontend` Dockerfile builds the SPA with `VITE_API_BASE_URL=/api/v1` by default and serves it from Nginx. Nginx proxies `/api/` to the `api` container, giving browser clients a same-origin base. For phone access, expose port 4173 through Tailscale Serve and use the resulting HTTPS origin for browser and iOS configuration.
