@@ -42,8 +42,10 @@ Literal percent signs are escaped at the same boundary so `LIKE` clauses keep
 their meaning under psycopg.
 Transactions yield a guarded connection facade so direct `conn.execute(...)`
 calls in invite acceptance and deletion workflows receive the same translation
-and commit/rollback behavior. PostgreSQL rows are returned as dictionaries,
-matching SQLite test behavior.
+and commit/rollback behavior. Ordinary PostgreSQL reads use autocommit so
+health checks and API lookups return the connection to the idle state instead
+of leaving an open `idle in transaction` session. PostgreSQL rows are returned
+as dictionaries, matching SQLite test behavior.
 
 Do not add PostgreSQL-specific SQL to route handlers. If a query cannot be
 expressed portably, add a backend-boundary translation or a numbered
@@ -59,9 +61,10 @@ cd one
 ONE_DATABASE_URL=sqlite:///./one.db pytest
 ```
 
-The opt-in contract suite exercises a disposable PostgreSQL database, schema
-idempotence, health reporting, nullable map lookup, transaction rollback, and
-foreign-key deletion cascade:
+The opt-in contract suite exercises a disposable PostgreSQL database, all
+numbered migrations, schema idempotence, health reporting, idle transaction
+state after reads, nullable map lookup, transaction rollback, and foreign-key
+deletion cascade:
 
 ```bash
 ONE_TEST_POSTGRES_URL='postgresql://one:<password>@127.0.0.1:5432/one' \
