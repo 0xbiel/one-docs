@@ -13,6 +13,8 @@ Family mode is the household coordination layer: a home can have multiple member
 
 An admin or caregiver must record `family_mode` consent before listing household members or issuing an invite. A new invite is single-use, hashed, expires, and creates a synthetic demo account/session on acceptance. The route does not establish legal representation.
 
+Existing non-admin members can be managed through `PATCH /api/v1/homes/{home_id}/family/members/{user_id}` (resident/caregiver only) and `DELETE /api/v1/homes/{home_id}/family/members/{user_id}`. Both operations require family consent, reject self and admin targets, invalidate the target's sessions, and write audit context; removal also clears the target's subject consents.
+
 ## Medication plans and check-ins
 
 With `medication_management` consent, a caregiver can organize a subject’s human-entered plan: name, dose, schedule rule, instructions, active flag, optimistic version, and an optional `assigned_caregiver_id` that must point to a caregiver in the same home. Legacy daily times, weekday/weekend recurrence, and date-specific exceptions are filtered by the requested reminder day. Check-ins are administrative states (`pending`, `taken`, `skipped`, `missed`) with `created_by`/`marked_by` context.
@@ -26,6 +28,8 @@ PATCH /api/v1/homes/{home_id}/medication-plans/{plan_id}
 GET   /api/v1/homes/{home_id}/medication-check-ins
 POST  /api/v1/homes/{home_id}/medication-plans/{plan_id}/check-ins
 GET   /api/v1/homes/{home_id}/medication-reminders
+PATCH /api/v1/homes/{home_id}/family/members/{user_id}
+DELETE /api/v1/homes/{home_id}/family/members/{user_id}
 POST  /api/v1/homes/{home_id}/family-assistant
 ```
 
@@ -37,6 +41,9 @@ The web `/dashboard/family` and iOS care-circle surfaces use the live family and
 medication endpoints when authenticated. Each can select a different household
 subject, display date-specific reminder slots, invite another caregiver, edit a
 plan, acknowledge a check-in, and archive a plan without deleting its history.
+The iOS surface also edits or revokes eligible household access with a swipe
+action; the web exposes the same operation through a labelled reveal action for
+pointer and keyboard users.
 Synthetic rows remain available only in explicit demo mode. Invitation delivery,
 representation evidence, notifications, audit/rights workflow, and real-subject
 governance still require a production adapter and approved DPIA.

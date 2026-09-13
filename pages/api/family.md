@@ -20,6 +20,14 @@ Operation ID: `family_assistant_api_v1_homes__home_id__family_assistant_post`. B
 
 The response includes `data`, `degraded`, `inference_status`, `subject_user_id`, `context_scope`, `medical_advice: false`, and `model_version`. Evidence IDs are filtered to the bounded context.
 
+## `PATCH /api/v1/homes/{home_id}/family/members/{user_id}`
+
+Operation ID: `family_member_update_api_v1_homes__home_id__family_members__user_id__patch`. Bearer caregiver/admin with `family_mode` consent. Request (`FamilyMemberUpdateIn`) accepts only `role: "resident"` or `role: "caregiver"`; it never grants `admin` access. A member cannot change their own role, an admin cannot be changed through this endpoint, and a non-admin caregiver cannot promote another member to caregiver. Existing sessions for the target are invalidated and the response returns `{ data, invalidated_sessions }`.
+
+## `DELETE /api/v1/homes/{home_id}/family/members/{user_id}`
+
+Operation ID: `family_member_remove_api_v1_homes__home_id__family_members__user_id__delete`. Bearer caregiver/admin with `family_mode` consent. Self-removal and admin removal are blocked. The member relationship, target sessions, and subject consents are removed transactionally, an audit entry is written, and the response returns the removed member view plus `invalidated_sessions`. Clients ask for confirmation because this endpoint is destructive and has no undo operation.
+
 ## Family UX versus deployment reality
 
-The web and iOS family surfaces make multiple accounts, caregiver roles, medication plans, reminders, and check-ins visible. Their current demo data is mock/synthetic in places; invitation delivery, durable identity, representation evidence, notifications, and production rights workflows still need a real deployment adapter.
+The web and iOS family surfaces make multiple accounts, caregiver roles, medication plans, reminders, and check-ins visible. Their current demo data is mock/synthetic in places; invitation delivery, durable identity, representation evidence, notifications, and production rights workflows still need a real deployment adapter. The web uses a labelled “Swipe to reveal” affordance for desktop pointer/keyboard users and an explicit confirmation step; native iOS uses `swipeActions` with the same confirmation policy.

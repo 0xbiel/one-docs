@@ -23,4 +23,4 @@ The web and iOS surfaces expose consent toggles, pause, export, and deletion req
 
 Do not put real resident names, email addresses, tokens, images, audio, or model prompts in this documentation or demo repository.
 
-The current family records and iOS/web care-circle rows are synthetic demo data. Before real use, define the controller/processor role, lawful basis, representation/authority process, notices, retention, and rights workflows in the backend privacy documentation.
+Synthetic family rows are confined to explicit demo mode. Live iOS/web care-circle views read backend memberships and enforce the API's consent and role checks. Before real use, define the controller/processor role, lawful basis, representation/authority process, notices, retention, and rights workflows in the backend privacy documentation.

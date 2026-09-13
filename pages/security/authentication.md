@@ -92,7 +92,7 @@ surface after consent.
 
 ## iOS login and storage audit
 
-`HTTPOneAPIClient` uses the same `/api/v1` paths and sends a bearer header only when initialized with `accessToken` and `homeID`. `RuntimeConfiguration` treats the default `http://127.0.0.1:8000/api/v1` as simulator/demo mode; a configured URL is intended to be a real LAN/Tailscale HTTPS API.
+`HTTPOneAPIClient` uses the same `/api/v1` paths and sends a bearer header only when initialized with `accessToken` and `homeID`. `RuntimeConfiguration` treats any configured `ONE_API_BASE_URL`, including the default `http://127.0.0.1:8000/api/v1`, as live; demo data is available only when the URL is omitted in previews/tests.
 
 `KeychainSessionStore` uses `kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly`.
 `AppStore.configured()` restores a non-expired `AuthSession`, initializes the

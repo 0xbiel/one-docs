@@ -8,6 +8,8 @@ Requests a passwordless email challenge. `purpose` is `create` or `login`. Email
 
 The local development/test response also includes `dev_code` and `delivery: development_outbox`; this is a deliberately bounded outbox because the Docker MVP has no external mail subscription. Production must connect a mail delivery adapter and must not expose `dev_code`.
 
+For `purpose: "login"`, an email that has no household account returns `404 No ONE account exists for this email`; the native and web clients should route that person to account creation. Reusing an existing email for `purpose: "create"` returns `409`.
+
 ## `POST /api/v1/auth/email/verify`
 
 Accepts `{ "email": "caregiver@example.com", "code": "123456" }`. The backend hashes the code, checks the normalized email, expiry, use state, and household membership, then atomically consumes the challenge and creates a bearer session. A reused or expired code returns `400`. The email identity and membership remain the durable account boundary when a caregiver changes phones; client Keychain/session storage is only a local credential cache.

@@ -38,7 +38,7 @@ Caregivers can support multiple people and, once memberships exist, multiple hom
 
 ## 4. iOS simulator and Tailscale
 
-The iOS simulator uses `http://127.0.0.1:8000/api/v1` as deterministic demo mode and cannot provide RoomPlan/LiDAR. A physical iPhone needs `ONE_API_BASE_URL` set to a host-reachable HTTPS URL ending in `/api/v1`; `localhost` on the phone means the phone.
+The iOS simulator uses `http://127.0.0.1:8000/api/v1` as its live local API endpoint when the backend is running; demo data is only used when the API URL is omitted for previews/tests. The simulator cannot provide RoomPlan/LiDAR. A physical iPhone needs `ONE_API_BASE_URL` set to a host-reachable HTTPS URL ending in `/api/v1`; `localhost` on the phone means the phone.
 
 For private remote testing, run `tailscale serve --bg http://127.0.0.1:4175`
 when using the existing checkout (or substitute `4173` for a fresh stack), then
