@@ -57,6 +57,12 @@ These coordinates are relative, not meters. The caregiver can select two points
 on the map and enter a known wall, doorway, or object length to store a
 reference scale. Native RoomPlan/LiDAR remains the metric 3D path.
 
+The worker applies the configured semantic confidence floor before furniture or
+opening detections are added to the map. The API also rejects sweeps with weak
+structural agreement or excessive image-space reprojection error. Rejected
+revisions remain available for audit/history, but the scene endpoint exposes no
+misleading geometry from them and reports that another sweep is required.
+
 The same loaded YOLO-World checkpoint is also used by the bounded live-vision
 endpoint for candidate-label object detection. When a fixed camera has an
 active RoomPlan registration, the backend combines those 2D detections with the

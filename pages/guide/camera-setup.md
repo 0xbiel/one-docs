@@ -79,15 +79,16 @@ the same physical iPhone as the paired camera. The continuous publisher still
 runs separately in Safari.
 
 1. Open **Map** in the native ONE app.
-2. Select **Update room scan**. Under **Camera to position**, choose the paired
-   camera only if this is that same physical iPhone. Otherwise leave **Map
-   only** selected.
+2. Select **Update room scan**. If the household has exactly one active paired
+   camera, ONE selects it automatically. With multiple cameras, choose the one
+   that is this same physical iPhone; otherwise leave **Map only** selected.
 3. Select **Start LiDAR scan**.
 4. Walk slowly around the room so RoomPlan captures the walls, floor,
    openings, and visible furniture.
 5. Before finishing, hold the iPhone still in the exact position and
-   orientation where the camera will remain. Finish only after tracking is
-   stable.
+   orientation where the camera will remain. Once tracking is stable, tap
+   **Done scanning**. That stops the RoomPlan session and captures the final AR
+   camera pose used for registration.
 6. Wait for ONE to save the metric scene, camera registration, and 3D asset.
    A camera-positioning failure does not discard the 3D room map.
 7. Confirm **Native RoomPlan · metric 3D** and **Camera positioned**. If the app
