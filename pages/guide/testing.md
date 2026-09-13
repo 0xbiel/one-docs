@@ -37,6 +37,20 @@ The suite checks migrations, health reporting, qmark transactions, nullable
 map queries, and foreign-key cascade deletion. It uses an unreachable LM
 Studio URL and does not make inference requests.
 
+## Mapping validation
+
+Treat a camera map as valid only when a test can show a guided sweep reaching a
+ready result, persisted relative polygons/walls, confidence and model
+metadata, and discarded frame bytes. A needs_rescan, unavailable, or failed
+result must leave the prior map unchanged.
+
+Treat a 3D map as valid only when a native physical LiDAR fixture includes
+RoomPlan provenance, metric units, an up axis, a coordinate frame, and valid
+3D geometry. Browser RGB data, Simulator data, and generic normalized scan JSON
+must not enable the 3D view. The backend tests cover the strict RoomPlan
+rejection path and a valid native-like fixture; physical-device capture remains
+an iOS acceptance test.
+
 ## Frontend
 
 ```bash

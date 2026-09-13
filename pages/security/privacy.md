@@ -13,9 +13,33 @@ ONE’s privacy posture is implemented as gates and data lifetimes, not just cop
 - Clip bytes can be sealed with AES-GCM using a locally supplied key.
 - Audit rows record consent, pairing, and privacy actions.
 - Export and deletion requests are exposed through backend routes and web/iOS controls.
-- iOS includes `PrivacyInfo.xcprivacy` and a manual fallback when RoomPlan is unavailable.
+- iOS includes `PrivacyInfo.xcprivacy` and keeps RoomPlan-unavailable devices on
+  an explicit non-3D/legacy state; they must not be presented as LiDAR maps.
 - Family sharing requires an explicit `family_mode` purpose and member/subject checks.
 - Medication plans, reminders, and check-ins require `medication_management` consent; family-assistant context is limited to those records.
+
+## Camera-map retention
+
+The guided sweep is an 8–12 second RGB processing window. Sample frames are
+bounded, held only for the active generation job, and discarded after ready,
+needs_rescan, unavailable, or failed. They must not be written to PostgreSQL,
+the object store, application logs, browser storage, or the documentation
+repository.
+
+Only derived camera-map data is durable: relative polygons, wall segments,
+camera pose, confidence, source resolution, job status, model version, and map
+revision metadata. The camera-derived 2D record is explicitly relative and
+does not contain a fabricated meter accuracy. Export and deletion requests
+must include these derived records.
+
+RoomPlan data has a different provenance boundary. A 3D map is retained only
+after native iOS provenance, LiDAR capability, schema, coordinate frame, units,
+up axis, and geometry have been validated. A browser RGB sample never creates a
+3D artifact.
+
+If the local M3 Pro worker is unavailable, no sample set is retained as a map.
+The backend may retain a terminal job status and bounded error code for
+support, but it must not retain the raw frames that caused it.
 
 ## GDPR-shaped controls
 

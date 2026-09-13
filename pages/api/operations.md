@@ -8,6 +8,17 @@ Operation ID: `retention_run_api_v1_admin_retention_run_post`. Bearer admin only
 
 Operation ID: `livekit_webhook_api_v1_livekit_webhook_post`. See [Clips & LiveKit](/api/media). It is the only current webhook operation and is verified from the request authorization/body when production credentials are configured.
 
+## Camera-map cleanup
+
+The automatic mapping behavior retains only derived geometry and bounded job
+metadata. Raw RGB sweep samples are discarded when the job reaches ready,
+needs_rescan, unavailable, or failed. Replacing a map creates a new revision;
+deletion removes map artifacts with the rest of the home-owned records.
+
+The current backend has no separate map-generation retention endpoint. The
+existing retention run covers the resources implemented in the current
+contract, while map-job cleanup belongs to the geometry-worker integration.
+
 ## Canonical error envelope
 
 The current runtime exception handlers normalize application and validation failures to this envelope and add the same ID as `X-Request-ID`:

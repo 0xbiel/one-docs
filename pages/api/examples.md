@@ -26,7 +26,13 @@ curl -sS -X POST "$BASE_URL/api/v1/homes/home_demo/consents" \
   -d '{"purpose":"video_capture","policy_version":"demo-2026-09","granted":true}'
 ```
 
-## Add a camera and RoomPlan map
+## Add a camera and a legacy map record
+
+This example exercises the current generic compatibility route. It does not
+create automatic camera geometry and it must not be used to claim a 3D
+RoomPlan model. Use a native validated LiDAR producer for a future strict
+RoomPlan upload, and use the guided sweep behavior in
+[Camera mapping](/architecture/camera-mapping) for camera-derived 2D data.
 
 ```bash
 curl -sS -X POST "$BASE_URL/api/v1/homes/home_demo/cameras" \
@@ -35,8 +41,30 @@ curl -sS -X POST "$BASE_URL/api/v1/homes/home_demo/cameras" \
 
 curl -sS -X POST "$BASE_URL/api/v1/homes/home_demo/maps" \
   -H 'Authorization: Bearer TOKEN_REDACTED' -H 'Content-Type: application/json' \
-  -d '{"coordinate_frame":"roomplan-local","map_data":{"zones":[]}}'
+  -d '{"coordinate_frame":"manual-2d","map_data":{"zones":[]}}'
 ```
+
+## Start an automatic camera map job
+
+The paired publisher submits the bounded sweep to its own camera job. The
+caregiver can poll the same job with the `GET` route while keeping the setup
+sheet open.
+
+```bash
+curl -sS -X POST "$BASE_URL/api/v1/homes/home_demo/cameras/camera_demo/map-generation" \
+  -H 'Authorization: Bearer TOKEN_REDACTED' -H 'Content-Type: application/json' \
+  -d '{"room_label":"Hallway","orientation":"landscape","resolution_width":640,"resolution_height":384}'
+
+curl -sS -X POST "$BASE_URL/api/v1/homes/home_demo/cameras/camera_demo/map-generation/JOB_ID_REDACTED/frames" \
+  -H 'Authorization: Bearer TOKEN_REDACTED' -H 'Content-Type: application/json' \
+  -d '{"frames":[{"frame_base64":"BASE64_JPEG_REDACTED","width":640,"height":384,"captured_at":"2026-09-13T12:00:00Z"},{"frame_base64":"BASE64_JPEG_REDACTED","width":640,"height":384},{"frame_base64":"BASE64_JPEG_REDACTED","width":640,"height":384}]}'
+
+curl -sS "$BASE_URL/api/v1/homes/home_demo/cameras/camera_demo/map-generation/JOB_ID_REDACTED" \
+  -H 'Authorization: Bearer TOKEN_REDACTED'
+```
+
+The real browser sends 16 samples. The example uses the minimum three-frame
+batch; the live endpoint accepts at most twenty.
 
 ## Submit a bounded vision frame
 

@@ -8,7 +8,14 @@ Operation ID: `consent_list_api_v1_homes__home_id__consents_get`. Bearer home me
 
 ## `POST /api/v1/homes/{home_id}/consents`
 
-Operation ID: `consent_api_v1_homes__home_id__consents_post`. Bearer home member; publishers are blocked. Request (`ConsentIn`) requires `purpose` (1–120 chars) and `policy_version` (1–40 chars), with `granted` defaulting to `true` and optional `subject_user_id`. Without a subject ID, the actor is the subject. Represented-subject decisions require admin/caregiver role and an actual consent/authority process outside this endpoint.
+Operation ID: `consent_api_v1_homes__home_id__consents_post`. Bearer home member;
+publishers may record only their own `video_capture` or `audio_capture`
+decision, while other consent purposes remain blocked. Request (`ConsentIn`)
+requires `purpose` (1–120 chars) and `policy_version` (1–40 chars), with
+`granted` defaulting to `true` and optional `subject_user_id`. Without a subject
+ID, the actor is the subject. Represented-subject decisions require
+admin/caregiver role and an actual consent/authority process outside this
+endpoint.
 
 The response contains `id`, `granted`, `subject_user_id`, and current `paused` state. Recording `video_capture` updates the home runtime pause flag.
 
@@ -19,6 +26,23 @@ Operation ID: `privacy_export_api_v1_homes__home_id__privacy_export_post`. Beare
 ## `POST /api/v1/homes/{home_id}/privacy/delete`
 
 Operation ID: `privacy_delete_api_v1_homes__home_id__privacy_delete_post`. Bearer admin only. The handler removes map artifacts and encrypted clip material, cascades home-owned records in a transaction, and returns `{ request_id, status: "completed" }` when cleanup finishes. A media cleanup failure returns `503 Deletion is pending media cleanup` with `X-Deletion-Request-ID`; retry using an operator workflow rather than assuming deletion completed.
+
+## Camera sweep privacy behavior
+
+The guided camera sweep is an 8–12 second, consent-gated processing window.
+Its RGB samples are temporary input to the local geometry worker. The desired
+terminal behavior is:
+
+| Outcome | Stored |
+| --- | --- |
+| ready | Derived relative polygons, walls, camera pose, confidence, model metadata, and map revision |
+| needs_rescan | Previous map plus a bounded terminal status; no raw frames |
+| unavailable | Previous map plus a bounded worker error/status; no raw frames |
+| failed | Previous map plus a bounded validation/error status; no raw frames |
+
+The current vision frame endpoint remains an in-memory object-detection route;
+it is not a camera-map upload route. Do not infer room geometry retention or
+map-generation success from a response with persisted set to false.
 
 ## Privacy boundaries
 

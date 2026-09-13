@@ -1,6 +1,8 @@
 # Schemas & generated contract
 
-The committed `one/contracts/openapi.json` is OpenAPI 3.1.0 (`ONE API`, version `0.1.0`). It currently exposes 23 component schemas. This page names each schema and the fields/constraints clients should use; the JSON contract remains the source of truth.
+The committed `one/contracts/openapi.json` is OpenAPI 3.1.0 (`ONE API`,
+version `0.1.0`). This page names the current schemas and the camera-map
+contract. The generated JSON contract remains the source of truth.
 
 ## Input schemas
 
@@ -12,7 +14,7 @@ The committed `one/contracts/openapi.json` is OpenAPI 3.1.0 (`ONE API`, version 
 | `ConsentIn` | consent record | purpose, policy version; granted defaults true; optional subject |
 | `CameraIn` | camera create | name; optional room |
 | `RoomIn` | room create | name |
-| `MapIn` | map upload | `map_data`; optional room; `coordinate_frame` defaults `roomplan-local` |
+| `MapIn` | legacy map upload | `map_data`; optional room; `coordinate_frame` defaults `manual-2d` |
 | `CalibrationIn` | calibration | camera/map IDs, intrinsics, extrinsics; optional accuracy 0–100 |
 | `ObjectIn` | object create | label; optional display name |
 | `ObservationIn` | derived observation | optional IDs/coordinates; confidence 0–1; uncertainty 0–100 |
@@ -27,6 +29,75 @@ The committed `one/contracts/openapi.json` is OpenAPI 3.1.0 (`ONE API`, version 
 | `MedicationPlanIn` | plan create | subject, name, dose, schedule; optional instructions/active/`assigned_caregiver_id` |
 | `MedicationPlanUpdate` | plan patch | nullable partial fields including `assigned_caregiver_id`; optional version ≥1 |
 | `MedicationCheckInIn` | check-in upsert | date-time and status pending/taken/skipped/missed |
+
+## Mapping contract schemas
+
+These fields make map provenance and dimensionality explicit. They prevent the
+frontend from treating a browser visualization or an old zone rectangle as a
+3D model.
+
+| Schema | Used by | Required fields / important constraints |
+| --- | --- | --- |
+| `CameraMapGenerationStartIn` | automatic camera sweep start | optional room/label/orientation; required positive source resolution |
+| `CameraMapFrameIn` / `CameraMapFramesIn` | paired publisher samples | 3–20 frames with base64 bytes, positive width/height, optional capture time; bytes are bounded and ephemeral |
+| `RoomPlanScanMetadata` | native LiDAR upload | `provenance=native-roomplan`, device model, `lidar=true`, RoomPlan version, metric units, Y up-axis, and `geometry_type=3d` |
+| `RoomLayoutResult` | private geometry-service result | `camera-cv-2d`, `2d`, normalized polygons/walls, relative camera pose, confidence metrics, and `metric_scale_known=false` |
+| Scene | dashboard map | scene ID, revision, source, dimension, geometry status, zones, optional walls/camera pose, confidence, and metric-scale flag |
+
+The generation routes return a stable job view containing `job_id`, `status`,
+`progress`, `source`, `dimension`, `metric_scale_known`, frame count,
+resolution, metrics, model version, and either `map_id` or an error. The private
+geometry service has its own request/response schemas in
+`one/geometry_service/contracts.py` and is not exposed through the public
+OpenAPI surface.
+
+### Map-generation status values
+
+The job status is one of:
+
+- collecting: samples are still being accepted;
+- processing: the local room-layout worker is analyzing the bounded sample set;
+- ready: derived geometry passed the confidence threshold and a map revision exists;
+- needs_rescan: coverage or confidence was insufficient; the previous map remains;
+- unavailable: the configured local GPU worker cannot be reached or run;
+- failed: request validation or processing failed.
+
+Only ready creates or activates a new map revision. A terminal failure never
+replaces the previous valid map.
+
+### Source and dimension invariants
+
+- camera-cv-2d always has dimension 2d and metric_scale_known=false.
+- roomplan-lidar-3d always has dimension 3d and native LiDAR provenance.
+- legacy-2d can be displayed in 2D for migration, but cannot enable 3D.
+- A browser request that claims RoomPlan or LiDAR is rejected with 422.
+- A 2D map is never extruded, padded, or converted into a 3D model by the API.
+
+Example camera map metadata:
+
+~~~json
+{
+  "source": "camera-cv-2d",
+  "dimension": "2d",
+  "geometry_status": "ready",
+  "metric_scale_known": false,
+  "confidence": 0.81,
+  "model_version": "local-room-layout-v1"
+}
+~~~
+
+Example native 3D provenance:
+
+~~~json
+{
+  "source": "roomplan-lidar-3d",
+  "producer": "native-ios",
+  "framework": "RoomPlan",
+  "lidar_used": true,
+  "units": "meters",
+  "up_axis": "Y"
+}
+~~~
 
 ## Error schemas
 

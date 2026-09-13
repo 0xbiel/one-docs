@@ -23,9 +23,13 @@ ONE_LIVEKIT_API_SECRET=secret
 ONE_LM_STUDIO_URL=http://127.0.0.1:1234/v1
 ONE_LM_STUDIO_MODEL=qwen3.6-35b-a3b
 ONE_LM_STUDIO_API_KEY=
+# Host-side camera room-layout service (Docker reaches the Mac via the bridge).
+ONE_GEOMETRY_SERVICE_URL=http://host.docker.internal:8090
+ONE_GEOMETRY_TIMEOUT_SECONDS=45
+ONE_GEOMETRY_REQUIRE_GPU=true
 # Keep inference off for the deterministic MVP until it is explicitly enabled.
 ONE_LLM_ENABLED=false
-ONE_CORS_ORIGINS=http://localhost:5173,http://localhost:3000
+ONE_CORS_ORIGINS=http://localhost:5173,http://localhost:4175,http://127.0.0.1:5173,http://127.0.0.1:4175
 ```
 
 The repository currently provides these settings in `one/app/config.py`; create your own local file rather than copying credentials from another machine. The PostgreSQL hostname `postgres` is reachable only from the Compose network. For a manual host-run backend, use an equivalent host URL such as `postgresql://one:<password>@127.0.0.1:5432/one`, or explicitly choose `sqlite:///./one.db` for the zero-setup test adapter. The `devkey`/`secret` pair is only for the local Compose `--dev` server. For a phone, set `ONE_LIVEKIT_URL` to a host-reachable LAN/Tailscale WebSocket endpoint and use trusted `wss://` when the page is served over HTTPS.
@@ -62,3 +66,8 @@ keeps API calls same-origin. For iOS, `RuntimeConfiguration` reads the
 `ONE_API_BASE_URL` Info.plist value generated from the Xcode build setting. A
 Tailscale Serve deployment uses the HTTPS host plus `/api/v1`; never hard-code
 a personal tailnet hostname in a committed project file.
+
+The geometry service runs separately on the Mac host. Model mode requires
+`ONE_GEOMETRY_MODEL_PATH`, `ONE_GEOMETRY_MODEL_CONFIG`, and a working PyTorch
+MPS runtime; there is no bundled checkpoint. Use `ONE_GEOMETRY_MODE=mock` only
+for an explicit local contract test.

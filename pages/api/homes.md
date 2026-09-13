@@ -32,30 +32,99 @@ Operation ID: `rooms_api_v1_homes__home_id__rooms_get`. Returns `{ data: [...] }
 
 Operation ID: `room_api_v1_homes__home_id__rooms_post`. Request (`RoomIn`) requires `name` (1–120 chars). Returns the created room ID and name.
 
-## RoomPlan maps and scene
+## Maps and scene
+
+The target map read model carries explicit source and dimension metadata. The
+dashboard uses this gate once those fields are available:
+
+| Source | Dimension | Meaning |
+| --- | --- | --- |
+| camera-cv-2d | 2D | Relative polygons and walls generated from the paired camera sweep |
+| roomplan-lidar-3d | 3D | Native RoomPlan geometry from a LiDAR-capable iPhone or iPad |
+| legacy-2d | 2D | Older provisional/manual data that needs a fresh camera sweep |
 
 ### `GET /api/v1/homes/{home_id}/maps`
 
-Operation ID: `maps_api_v1_homes__home_id__maps_get`. Returns map read models, newest revision first.
-
-### `POST /api/v1/homes/{home_id}/maps`
-
-Operation ID: `room_map_api_v1_homes__home_id__maps_post`. Request (`MapIn`) requires a JSON object `map_data`; optional `room_id`; `coordinate_frame` defaults to `roomplan-local` (max 80 chars). Returns `id`, revision, coordinate frame, and an artifact key.
+Operation ID: `maps_api_v1_homes__home_id__maps_get`. Returns the stored map
+read models, newest revision first. The current response includes the map
+record, map data, coordinate frame, source, approximate flag,
+localization status, metadata, and revision.
 
 ### `GET /api/v1/homes/{home_id}/maps/current`
 
-Operation ID: `current_map_api_v1_homes__home_id__maps_current_get`. Returns the newest map read model or `404 No room map has been uploaded`.
+Operation ID: `current_map_api_v1_homes__home_id__maps_current_get`. Returns
+the newest map read model or `404 No room map has been uploaded`.
 
 ### `GET /api/v1/homes/{home_id}/maps/{map_id}`
 
-Operation ID: `map_detail_api_v1_homes__home_id__maps__map_id__get`. Returns one map read model or `404 Map not found`.
+Operation ID: `map_detail_api_v1_homes__home_id__maps__map_id__get`. Returns one
+map read model or `404 Map not found`.
 
 ### `GET /api/v1/homes/{home_id}/scene`
 
-Operation ID: `scene_api_v1_homes__home_id__scene_get`. Returns the compact dashboard scene contract (`sceneId`, `version`, `zones`, `mapId`, `coordinateFrame`). An empty home returns `{ sceneId: null, version: 0, zones: [] }`.
+Operation ID: `scene_api_v1_homes__home_id__scene_get`. The current response
+contains `sceneId`, `version`, `source`, `dimension`, `geometryStatus`,
+`rescanRequired`, `zones`, `polygons`, `walls`, `camera`, `confidence`, `mapId`,
+and `coordinateFrame`. An empty home returns a null scene with version zero and
+`rescanRequired: true`.
 
-## Camera-to-map calibration
+### `POST /api/v1/homes/{home_id}/maps/provisional`
 
-### `POST /api/v1/homes/{home_id}/calibrations`
+Operation ID: `provisional_map_api_v1_homes__home_id__maps_provisional_post`.
 
-Operation ID: `calibration_api_v1_homes__home_id__calibrations_post`. Request (`CalibrationIn`) requires `camera_id`, `map_id`, object `intrinsics`, and object `extrinsics`; optional `accuracy_m` is constrained to 0–100. Returns the created ID and the submitted calibration fields. The API stores calibration metadata; it does not claim metric accuracy beyond the supplied value.
+The compatibility route accepts `camera_id`, optional `room_id`, source
+resolution, and caller-supplied zones. It stores `legacy-2d` data with
+`approximate=true` and `localization_status=rescan-required`. It does not call
+the room-layout service and never invents missing bounds.
+
+### Automatic camera map generation
+
+The paired publisher starts a bounded generation job after recording its own
+`video_capture` consent:
+
+```text
+POST /api/v1/homes/{home_id}/cameras/{camera_id}/map-generation
+GET  /api/v1/homes/{home_id}/cameras/{camera_id}/map-generation
+POST /api/v1/homes/{home_id}/cameras/{camera_id}/map-generation/{job_id}/frames
+GET  /api/v1/homes/{home_id}/cameras/{camera_id}/map-generation/{job_id}
+```
+
+The start body requires `resolution_width` and `resolution_height`, and accepts
+`room_id`, `room_label`, and `orientation`. The frame body contains 3–20
+`frame_base64`, `width`, `height`, and optional `captured_at` entries. A frame
+is limited to 3 MB after decoding and a batch to 18 MB. The publisher can only
+submit frames for its own camera; caregivers/admins can read status. The job
+states are `collecting`, `processing`, `ready`, `needs_rescan`, `unavailable`,
+and `failed`. Only `ready` creates a new map revision.
+
+### `POST /api/v1/homes/{home_id}/maps/roomplan`
+
+Operation ID: `roomplan_map_api_v1_homes__home_id__maps_roomplan_post`.
+
+The handler accepts `normalized_scan` plus required `scan_metadata` fields:
+`provenance=native-roomplan`, `device_model`, `lidar=true`,
+`roomplan_version`, metric `units`, `up_axis=Y`, and `geometry_type=3d`. The
+scan itself must contain actual 3D vectors/vertices and the same metric/up-axis
+declarations. Missing provenance, missing LiDAR evidence, malformed geometry,
+or a browser payload returns `422`. A browser client must never call this route
+to turn an RGB map into 3D.
+
+### `POST /api/v1/homes/{home_id}/maps`
+
+The generic map upload accepts `map_data`, optional `room_id`, and a coordinate
+frame, then stores source `legacy-2d` with `rescan-required`. It is a
+compatibility boundary for existing clients; it cannot unlock the 3D view.
+
+## Camera pose, not fake calibration
+
+The required automatic camera result stores a relative camera pose, image-space
+transform, homography or reprojection error where available, and confidence. It
+does not report an invented accuracy in meters: RGB-only mapping has no
+reliable metric scale.
+
+The existing `POST /api/v1/homes/{home_id}/calibrations` endpoint accepts
+intrinsics and extrinsics for compatibility with older clients. Camera-derived
+jobs store model metrics and `accuracy_m=null`; RGB calibration does not claim
+meter accuracy. Legacy manual records, three-anchor UI, hardcoded meter values,
+and provisional maps are rescan-required and are not the source of a current
+camera-derived map.

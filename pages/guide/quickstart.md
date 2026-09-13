@@ -12,12 +12,16 @@ test -f .env || cp .env.example .env
 docker compose up --build -d api frontend
 ```
 
-Compose defaults the API to `postgresql://one:change-me@postgres:5432/one` and applies the tracked migrations before serving requests. If an existing `.env` still contains the old `ONE_DATABASE_URL=sqlite:///...` line, change it to the PostgreSQL URL (or remove the line so Compose can use its default); do not overwrite an existing `.env` blindly. Open `http://127.0.0.1:4173`. The frontend proxies `/api/*` to FastAPI. Verify both the site and the selected database with `curl http://127.0.0.1:4173/api/v1/health`; a healthy Docker run reports `"database":"postgresql"`. The API is internal port `8000`; LiveKit uses `7880`, `7881`, and `7882/udp`. Keep port `4175` untouched; it is a separate existing Docker frontend. If `4173` is occupied, use alternate frontend port `4174`.
-
-If the separate existing frontend is already running on `4175`, leave that
-container untouched and start only the API with `docker compose up --build -d
-api`; use `http://127.0.0.1:4175` for the website. The `api frontend` command
-above is for a fresh stack whose frontend should use the default `4173` port.
+Compose defaults the API to `postgresql://one:change-me@postgres:5432/one` and
+applies the tracked migrations before serving requests. If an existing `.env`
+still contains the old `ONE_DATABASE_URL=sqlite:///...` line, change it to the
+PostgreSQL URL (or remove the line so Compose can use its default); do not
+overwrite an existing `.env` blindly. Open `http://127.0.0.1:4175`. The
+frontend proxies `/api/*` to FastAPI. Verify both the site and the selected
+database with `curl http://127.0.0.1:4175/api/v1/health`; a healthy Docker run
+reports `"database":"postgresql"`. The API is internal port `8000`; LiveKit uses
+`7880`, `7881`, and `7882/udp`. If a local `.env` overrides the frontend port,
+use that actual port consistently.
 
 ## 2. Create an account and sign in
 
@@ -32,7 +36,15 @@ There is no password login, refresh-token, or external identity provider. Live a
 
 ## 3. Household invite and onboarding
 
-An admin/caregiver with `family_mode` consent creates an invite at `POST /api/v1/homes/{home_id}/family/invites`; the recipient accepts at `POST /api/v1/family/invites/accept`. Confirm home/role with `/api/v1/me`, record only understood purposes (`audio_capture`, `video_capture`, `family_mode`, and `medication_management` where applicable), pair a publisher through `/join/:code`, grant camera/microphone permission after consent, and calibrate RoomPlan or use manual zones.
+An admin/caregiver with `family_mode` consent creates an invite at
+`POST /api/v1/homes/{home_id}/family/invites`; the recipient accepts at
+`POST /api/v1/family/invites/accept`. Confirm home/role with `/api/v1/me`,
+record only understood purposes (`audio_capture`, `video_capture`,
+`family_mode`, and `medication_management` where applicable), pair a
+publisher through `/join/:code`, and grant camera/microphone permission after
+consent. A browser camera uses the guided RGB sweep for the relative 2D path.
+Only native RoomPlan on a supported LiDAR device can qualify for 3D; Safari
+cannot capture it.
 
 Caregivers can support multiple people and, once memberships exist, multiple homes; each request is scoped to the token's `home_id` and selected subject. Cross-subject reads require caregiver/admin role and purpose consent. Web privacy/account controls are under `/dashboard/privacy`; iOS groups account/session and privacy controls under Account/Settings. Some family/medication rows remain synthetic; an invite code is not proof of legal representation.
 
@@ -41,7 +53,8 @@ Caregivers can support multiple people and, once memberships exist, multiple hom
 The iOS simulator uses `http://127.0.0.1:8000/api/v1` as its live local API endpoint when the backend is running; demo data is only used when the API URL is omitted for previews/tests. The simulator cannot provide RoomPlan/LiDAR. A physical iPhone needs `ONE_API_BASE_URL` set to a host-reachable HTTPS URL ending in `/api/v1`; `localhost` on the phone means the phone.
 
 For private remote testing, run `tailscale serve --bg http://127.0.0.1:4175`
-when using the existing checkout (or substitute `4173` for a fresh stack), then
+for the current Compose default, or substitute the frontend port from the
+local `.env`, then
 run `tailscale serve --bg --https=8444 http://127.0.0.1:7880` and inspect
 `tailscale serve status`. Use the reported website HTTPS URL for iOS/browser and
 the LiveKit HTTPS port as `ONE_LIVEKIT_URL=wss://<tailnet-host>:8444` in the
@@ -60,7 +73,11 @@ ONE_DATABASE_URL=sqlite:///./one.db uvicorn app.main:app --reload --port 8000
 
 The manual fallback intentionally uses SQLite for zero-setup tests. Install `.[postgres]`, start a reachable PostgreSQL instance, and set a `postgresql://...` URL when you want to exercise the production-shaped adapter outside Docker.
 
-In a second terminal: `cd one-frontend && npm ci && npm run dev`. Vite normally uses `5173`; use `4174` only for the alternate workflow. Do not use or rebind `4175`. Set `VITE_DEMO_MODE=false` and `VITE_API_BASE_URL=http://localhost:8000/api/v1` for live calls.
+In a second terminal: `cd one-frontend && npm ci && npm run dev`. Vite normally
+uses `5173`; use `4174` only for an alternate local workflow. Docker's built
+frontend uses `4175` by default. Set `VITE_DEMO_MODE=false` and
+`VITE_API_BASE_URL=http://localhost:8000/api/v1` for direct live calls, or
+`/api/v1` when the frontend is served by Docker/Nginx.
 
 ## Pair a publisher
 

@@ -14,6 +14,18 @@ With valid calibration and depth, the detector center is projected through camer
 
 Without valid calibration or depth, ONE returns a named quadrant-like zone and a wider uncertainty radius with `zone-fallback`. This is intentionally less specific than a fabricated coordinate.
 
-## Calibration records
+## Camera pose and calibration records
 
-The API accepts camera intrinsics, extrinsics, map ID, and optional accuracy in meters. The frontend’s calibration screen presents three anchors and an estimated error as a product flow; the backend record is the authoritative persisted contract. Treat all displayed accuracy as approximate until it is measured on the target camera and room.
+The automatic camera-map result carries a relative camera pose, image-space
+transform, homography or reprojection error where available, and confidence.
+RGB-only mapping has no reliable metric scale, so it must not display a
+fabricated accuracy in meters.
+
+The API's existing calibration record accepts camera intrinsics, extrinsics,
+map ID, and optional accuracy for compatibility with older clients. The old
+three-anchor frontend flow and hardcoded meter value are legacy data and should
+be marked rescan-required. They are not the source of camera-derived geometry.
+
+When a real native RoomPlan map is available, its metric coordinate frame comes
+from the LiDAR scan, not from the browser camera calibration. See
+[Camera mapping](/architecture/camera-mapping) for the provenance gate.

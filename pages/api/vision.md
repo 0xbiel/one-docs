@@ -16,6 +16,22 @@ Each detection carries a candidate label, confidence, bounding box, and projecti
 
 Check-in and caregiver-summary routes collect contextual evidence and call the LM Studio adapter when available. The configured model defaults to `qwen3.6-35b-a3b`. The adapter asks for structured JSON and validates the response; connection, parse, or model errors produce an explicit deterministic non-medical fallback. Model output is explanation support, never an authorization decision or diagnosis.
 
+## Room geometry is a separate boundary
+
+The current vision frame endpoint is an object-detection contract. It does not
+accept a sweep job identity, sequence of room samples, camera pose, wall
+geometry, or room-layout model selection, and it does not create a map. A
+successful vision response is therefore not evidence that camera mapping is
+available.
+
+The automatic mapping behavior is intentionally separate: a bounded RGB sample
+set is processed by the local M3 Pro room-layout worker, which returns relative
+2D polygons, wall segments, camera pose, confidence, and model metadata. Raw
+samples are discarded. If the worker is unavailable or confidence is too low,
+the mapping result is unavailable or needs_rescan and no map revision is
+created. See [Camera mapping](/architecture/camera-mapping) for the exact
+behavioral contract and the current route-status boundary.
+
 ## Family assistant scope
 
 `POST /api/v1/homes/{home_id}/family-assistant` is intentionally narrower than the check-in assistant. It sends only the selected subject’s active medication plans and up to 100 bounded check-in rows to the local model adapter. It excludes camera frames, transcripts, events, and a full household stream. The response reports whether it degraded to the deterministic `rules-family-v1` summary and always carries `medical_advice: false`.

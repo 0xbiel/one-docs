@@ -14,6 +14,59 @@ Set `ONE_CORS_ORIGINS` to the exact Vite origin, for example `http://localhost:5
 
 When using Docker, do not set a hard-coded API host in the browser: use `VITE_API_BASE_URL=/api/v1` and open the frontend origin. Nginx proxies `/api/` to FastAPI. A Tailscale URL must be HTTPS and must retain the `/api/v1` path for iOS.
 
+## Automatic map generation reports unavailable
+
+Unavailable means the local room-layout worker cannot be reached or cannot run
+the selected PyTorch/MPS model. It is not a successful map with lower
+confidence. Keep the previous map active and check the worker's local health
+signal, its MPS availability, the backend host bridge, and the API logs. Do not
+point the iPhone directly at the worker and do not substitute the LM Studio
+summary model for room geometry.
+
+The backend exposes persistent map-generation jobs and the Compose stack points
+them at `ONE_GEOMETRY_SERVICE_URL` on the host bridge. Start the host-side
+service in model mode with an explicit checkpoint/configuration and verify its
+`/health` response is ready. `ONE_GEOMETRY_MODE=mock` is only for contract
+tests; it is not a production fallback.
+
+## The iPhone cannot start the camera sweep
+
+Use the HTTPS website origin reported by Tailscale. A phone opening
+127.0.0.1 or localhost reaches the phone itself, not the Mac. In Safari,
+allow camera and microphone after the explicit consent step, keep the page
+open, and retry the sweep from the same setup page. If the permission was
+denied earlier, open Safari website settings for the origin, set Camera and
+Microphone to Allow, close the old tab, and reload.
+
+An accepted pairing code only proves that the one-time code was exchanged. It
+does not prove that camera media or sweep samples reached the backend.
+
+## The 4175 website still shows an old build
+
+The phone may be reaching the correct host while Docker is serving an old
+frontend bundle. Rebuild and recreate the frontend from the backend Compose
+project:
+
+~~~bash
+cd one
+docker compose up --build -d api frontend
+docker compose ps
+~~~
+
+Then hard-reload the desktop tab and reopen the HTTPS Tailscale URL on the
+iPhone. Confirm that the URL points to the frontend actually bound to 4175;
+another Vite or Nginx process on 4173/4174 is not the same build.
+
+## test@test still shows a legacy map
+
+The existing test@test data can contain a legacy map and the old manual
+calibration. Those records are useful fixtures for migration, but they are not
+proof of camera-derived geometry and must not unlock 3D. Check the map source,
+dimension, geometry status, and metric-scale flag. If source/dimension are
+absent or the source is `legacy-2d`, keep it marked rescan-required and run a
+fresh guided sweep once the local worker is available. Do not delete the
+historical row just to make the dashboard look empty.
+
 ## Inference provider connection fails
 
 Inference is disabled by default in the local `.env` (`ONE_LLM_ENABLED=false`),
@@ -36,7 +89,7 @@ The browser publisher asks for permission only after the explicit consent checkb
 and proxy it privately with Tailscale:
 
 ```bash
-tailscale serve --bg http://127.0.0.1:4175 # use 4173 for a fresh stack
+tailscale serve --bg http://127.0.0.1:4175 # use the actual ONE_FRONTEND_PORT
 tailscale serve --bg --https=8444 http://127.0.0.1:7880
 tailscale serve status
 ```
@@ -50,7 +103,13 @@ recommended path.
 
 ## RoomPlan is unavailable
 
-RoomPlan requires supported Apple hardware; Simulator intentionally reports unsupported. The iOS flow retains a manual-zone fallback so the product can still represent approximate places.
+RoomPlan requires supported Apple hardware and a native iOS client; Simulator
+intentionally reports unsupported. Safari cannot capture RoomPlan or create a
+LiDAR artifact. A non-LiDAR device can use the camera-derived 2D path, but it
+must never unlock the 3D view. The current native slice can start a capture
+session, while durable RoomPlan serialization and strict LiDAR upload still
+need to be implemented and verified on a physical device. The backend rejects
+incomplete or non-LiDAR RoomPlan payloads with 422.
 
 ## “PostgreSQL is configured” but requests fail
 

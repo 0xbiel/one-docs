@@ -27,6 +27,21 @@ flowchart TD
 
 The diagram intentionally shows PostgreSQL and the object store behind FastAPI, and LiveKit as a separately authorized media path; neither client bypasses the API policy boundary.
 
+## Map provenance boundary
+
+The camera sweep and native RoomPlan scan are different evidence paths. The
+local M3 Pro geometry worker consumes temporary RGB samples and can return only
+relative 2D geometry. A native iPhone or iPad RoomPlan scan is the only source
+that can qualify for 3D, and only after provenance, LiDAR capability, coordinate
+frame, units, and geometry validation. The API must keep a missing or failed
+worker result from replacing the previous map.
+
+The backend checkout includes the host-side room-layout service seam, the
+persistent camera map-generation job, and a strict 3D gate. The native iOS
+RoomPlan producer still needs to serialize and upload its captured result; until
+that work lands, only camera-derived relative 2D maps can be created. The map
+boundary is documented in [Camera mapping](/architecture/camera-mapping).
+
 ## Request boundaries
 
 - Every product route is under `/api/v1`.

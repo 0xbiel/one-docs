@@ -47,7 +47,7 @@ export default defineConfig({
     ],
     '/architecture/': [
       { text: 'System', items: [{ text: 'Overview', link: '/architecture/overview' }, { text: 'Repository map', link: '/architecture/repos' }, { text: 'Family mode', link: '/architecture/family' }, { text: 'Object memory & calibration', link: '/architecture/memory' }] },
-      { text: 'Clients', items: [{ text: 'Web app', link: '/architecture/web' }, { text: 'iOS & RoomPlan', link: '/architecture/ios' }, { text: 'Browser camera pairing', link: '/architecture/browser-camera' }] },
+      { text: 'Clients', items: [{ text: 'Web app', link: '/architecture/web' }, { text: 'Camera mapping', link: '/architecture/camera-mapping' }, { text: 'iOS & RoomPlan', link: '/architecture/ios' }, { text: 'Browser camera pairing', link: '/architecture/browser-camera' }] },
     ],
     '/api/': [
       { text: 'Contract', items: [{ text: 'API overview', link: '/api/overview' }, { text: 'Auth, pairing & sessions', link: '/api/auth-sessions' }, { text: 'Schemas & errors', link: '/api/schemas' }, { text: 'Request examples', link: '/api/examples' }] },
