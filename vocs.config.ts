@@ -8,9 +8,8 @@ export default defineConfig({
   colorScheme: 'light',
   rootDir: '.',
   srcDir: '.',
-  logo: {
-    text: 'ONE',
-  },
+  logoUrl: '/one-logo.png',
+  iconUrl: '/one-logo.png',
   theme: {
     accentColor: {
       light: '#1769e8',

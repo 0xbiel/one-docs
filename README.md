@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="public/one-logo.png" alt="ONE logo" width="128" />
+</p>
+
 # ONE documentation
 
 Polished Vocs documentation for the ONE local-first cognitive companion MVP. The content is grounded in the sibling repositories:
@@ -19,7 +23,7 @@ Build the static site with:
 npm run build
 ```
 
-The site uses Vocs 2.9, TypeScript configuration, and `style.css` for the ONE shell: white canvas, oversized black typography, thin gray outlines, rounded surfaces, and blue/cyan accents. `dist/` is generated and ignored; `package-lock.json` is tracked for reproducible installs.
+The site uses Vocs 2.9, TypeScript configuration, and `style.css` for the ONE shell: white canvas, oversized black typography, thin gray outlines, rounded surfaces, and blue/cyan accents. `public/one-logo.png` is the shared mark used by the Vocs navigation and favicon configuration. `dist/` is generated and ignored; `package-lock.json` is tracked for reproducible installs.
 
 ## Mapping documentation
 
