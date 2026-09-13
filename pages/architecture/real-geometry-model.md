@@ -57,6 +57,18 @@ These coordinates are relative, not meters. The caregiver can select two points
 on the map and enter a known wall, doorway, or object length to store a
 reference scale. Native RoomPlan/LiDAR remains the metric 3D path.
 
+The same loaded YOLO-World checkpoint is also used by the bounded live-vision
+endpoint for candidate-label object detection. When a fixed camera has an
+active RoomPlan registration, the backend combines those 2D detections with the
+stored camera intrinsics/extrinsics and RoomPlan floor geometry to produce an
+approximate metric world point and room-zone association. Detection does not
+create a 3D map and no raw frame is retained.
+
+Separate-camera RoomPlan registration does not depend on YOLO-World. The local
+worker builds ORB descriptors anchored by ARKit RGB + LiDAR depth samples and
+uses OpenCV feature matching plus PnP/RANSAC to estimate the fixed camera pose.
+Insufficient inliers or excessive reprojection error produces `needs_rescan`.
+
 ## Verification
 
 Before treating the worker as ready, check that `/health` returns `200` and

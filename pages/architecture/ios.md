@@ -6,13 +6,17 @@ The iOS app is a native SwiftUI vertical slice with resident, caregiver, and fam
 - **Resident:** Today, Assistant, and Account tabs.
 - **Family:** Care-circle members, least-privilege roles, shared medication reminders, and caregiver assistant actions.
 
-`AppStore.demo` seeds the UI with a home map, zones, a blue mug object, sample events, consent records, multiple caregiver accounts, and medication doses. In live mode, authentication begins with a focused welcome choice for sign in, account creation, or household invitation. Email sign in then advances to a dedicated short-lived code confirmation screen with change-email and resend actions. Invitation acceptance, session restoration in Keychain, onboarding consent writes, and logout use the FastAPI contract. Email identity is the durable household boundary when a person changes phones; camera pairing remains a separate device-scoped flow. The local development outbox exposes a one-time code because no mail subscription is required for the MVP.
+`AppStore.demo` seeds the UI with a home map, zones, a blue mug object, sample events, consent records, multiple caregiver accounts, and medication doses. In live mode, authentication begins with a focused welcome choice for sign in, account creation, or household invitation. Account creation records whether the care space is a private home or residence and whether its support focus is general or MCI-oriented; the onboarding copy keeps that context grounded in personal baselines, consent, and human follow-up rather than diagnosis. Email sign in then advances to a dedicated short-lived code confirmation screen with change-email and resend actions. Invitation acceptance, session restoration in Keychain, onboarding consent writes, and logout use the FastAPI contract. Email identity is the durable care-space boundary when a person changes phones; camera pairing remains a separate device-scoped flow. The local development outbox exposes a one-time code because no mail subscription is required for the MVP.
 
-The native app does not currently support the backend `publisher` role or run
-as a continuous camera source. An iPhone used as a household camera must open
-the web `/join` publisher flow in Safari. The native app remains the
-caregiver/resident experience and the LiDAR RoomPlan producer. See [Add a phone
-as a camera](/guide/camera-setup).
+The native app does not currently run as the backend `publisher` role or as a
+continuous camera source. A caregiver can, however, open **Home → Cameras →
+Pair camera** to create a real publisher credential, see the one-time code, and
+poll its `pending` / `connected` / `expired` state. Once connected, the native
+Cameras section reads the enabled camera list and displays the backend-reported
+online/paused state. An iPhone used as the fixed household or residence camera
+still opens the web `/join` publisher flow in Safari to publish media. The
+native app remains the caregiver/resident experience and the LiDAR RoomPlan
+producer. See [Add a phone as a camera](/guide/camera-setup).
 
 `RuntimeConfiguration` reads `ONE_API_BASE_URL` from the generated Info.plist. Any configured URL, including the default `http://127.0.0.1:8000/api/v1`, is live; demo data is reserved for previews and tests that omit the value. For a tailnet deployment, set the build setting to the Tailscale HTTPS URL plus `/api/v1`; keep certificates and tokens out of source control. Session material belongs in the Keychain abstraction, and local artifacts can use the AES-GCM helper.
 

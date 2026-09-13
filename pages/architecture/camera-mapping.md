@@ -78,6 +78,9 @@ Automatic camera generation uses these additional routes:
 | GET /api/v1/homes/{home_id}/cameras/{camera_id}/map-generation | Returns the newest job for that camera |
 | POST /api/v1/homes/{home_id}/cameras/{camera_id}/map-generation/{job_id}/frames | Accepts 3–20 bounded RGB samples; only the paired publisher may submit them |
 | GET /api/v1/homes/{home_id}/cameras/{camera_id}/map-generation/{job_id} | Returns progress, terminal state, metrics, model version, and map ID when ready |
+| POST /api/v1/homes/{home_id}/maps/{map_id}/visual-landmarks | Builds and stores a derived ORB landmark index from bounded native RGB + LiDAR depth samples for the active RoomPlan revision |
+| POST /api/v1/homes/{home_id}/cameras/{camera_id}/localize-roomplan | Matches fixed-camera JPEGs to the RoomPlan landmark index and stores a visual RoomPlan registration only when PnP quality passes |
+| POST /api/v1/homes/{home_id}/vision/frames | Runs bounded local YOLO-World detection and, for a registered camera, projects stable detections into the RoomPlan frame |
 
 The frame endpoint accepts `frame_base64`, `width`, `height`, and optional
 `captured_at`. Each frame is limited to 3 MB after decoding and the whole batch
@@ -148,11 +151,13 @@ one-ios target on a physical supported device.
 
 ## LiDAR-to-camera registration
 
-The native app now registers a paired camera directly from the AR camera pose
-captured inside the same RoomPlan session. The selected camera must be the same
-physical iPhone performing the scan and the scan must end with that device held
-still in its final fixed pose. The app serializes the finite 4×4
-`camera_to_world` matrix in the RoomPlan local coordinate frame.
+There are now two truthful registration paths into the native RoomPlan frame.
+If the selected camera is the same physical iPhone performing the scan, the
+native app can store the ARKit `camera_to_world` transform captured inside that
+RoomPlan session. For a separate fixed browser/webcam, the native app also
+collects a bounded set of RGB + LiDAR depth samples while scanning and uploads
+them to build a derived visual landmark index. Raw scan RGB/depth bytes are not
+retained by the backend or worker.
 
 `POST /api/v1/homes/{home_id}/camera-registrations/roomplan` accepts only an
 enabled camera and the active `roomplan-lidar-3d` / `roomplan-local` map. Normal
@@ -160,16 +165,27 @@ tracking stores an active `auto-roomplan-registration` calibration. Limited or
 unavailable tracking is stored as `needs_rescan` and no world pose is exposed
 to scene consumers. Creating a new map revision invalidates the old placement.
 
-The browser camera pose remains independent camera-relative 2D evidence. It is
-never converted or relabeled as RoomPlan registration. A pairing success, a
-browser fixed-placement confirmation, or a relative RGB pose alone must not be
-presented as a metric 3D camera position.
+`POST /api/v1/homes/{home_id}/maps/{map_id}/visual-landmarks` accepts the
+native RGB/depth samples for the active RoomPlan revision and stores only the
+derived ORB landmark artifact. `POST /api/v1/homes/{home_id}/cameras/{camera_id}/localize-roomplan`
+accepts one to eight fixed-camera JPEGs, matches their ORB features to those
+metric landmarks, and runs PnP/RANSAC. A strong solution stores an active
+`visual-roomplan-registration` calibration with a 4×4 camera transform,
+inlier count, match count, reprojection error, confidence, and intrinsics
+source. Weak or ambiguous matching returns `needs_rescan` and exposes no pose.
+
+The browser's camera-derived 2D sweep remains independent approximate evidence;
+it is never converted or relabeled as RoomPlan geometry. Metric 3D placement is
+claimed only after one of the explicit RoomPlan registration paths succeeds.
+When a camera has an active registration, local object detections can be
+projected into `roomplan-local`, associated with a RoomPlan room zone, and
+persisted as derived observations. Raw frame bytes remain transient.
 
 ## Current checkout status
 
 The native app can capture, normalize, and upload a strict RoomPlan scene,
-attach its USDZ model, and register the same physical paired iPhone into the
-RoomPlan frame. The scene contract exposes that state separately as
-`cameraRegistration` with `positioned`, `needs_rescan`, or `unavailable`.
-Existing camera-relative 2D maps remain separate and cannot unlock metric 3D
-camera placement.
+attach its USDZ model, register the scanning iPhone directly, and build a
+private visual landmark index for positioning separate fixed cameras. The scene
+contract exposes one or more registrations separately as `cameraRegistration`
+and `cameraRegistrations`. Existing camera-relative 2D maps remain separate and
+cannot unlock metric 3D camera placement by themselves.

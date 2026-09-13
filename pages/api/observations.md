@@ -24,9 +24,16 @@ Operation ID: `object_detail_api_v1_homes__home_id__objects__object_id__get`. Be
 
 ### `POST /api/v1/homes/{home_id}/vision/frames`
 
-Operation ID: `vision_frame_api_v1_homes__home_id__vision_frames_post`. Bearer home member with active `video_capture` consent. Request (`VisionIn`) requires `camera_id`, non-empty `frame_base64` (schema max 4,000,000 chars), positive `width` ≤7680, positive `height` ≤4320, and 1–20 `candidate_labels`. Optional `captured_at` is date-time; optional `depth_m` is >0 and ≤100.
+Operation ID: `vision_frame_api_v1_homes__home_id__vision_frames_post`. Bearer home member with active `video_capture` consent. Request (`VisionIn`) requires `camera_id`, non-empty `frame_base64` (schema max 4,000,000 chars), positive `width` ≤7680, and positive `height` ≤4320. `candidate_labels` is optional and bounded to 20 labels; optional `captured_at` is date-time and optional `depth_m` is >0 and ≤100.
 
-The current handler decodes and bounds the frame to 3 MB, rejects identity/medical-inference labels, and returns `{ data, detector_version, persisted: false, privacy }`. It does not write raw frame bytes to the database.
+The current handler decodes and bounds the frame to 3 MB, rejects identity/medical-inference labels, and calls the configured local YOLO-World detector. Stable detections are persisted as derived observations/events; the response returns `{ data, detector_version, observations, frames_persisted: false, privacy }`. It does not write raw frame bytes to the database.
+
+For a camera with an active `auto-roomplan-registration` or
+`visual-roomplan-registration`, projection uses the stored 4×4 transform and
+camera intrinsics to estimate a metric point against the RoomPlan floor. The
+derived observation stores the active RoomPlan `map_id`, XYZ coordinates,
+uncertainty, detector version, and confidence, and the response annotates the
+projection with the matching RoomPlan room zone when one contains the point.
 
 ## Derived observations
 

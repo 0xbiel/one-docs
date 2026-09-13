@@ -6,7 +6,11 @@ All operations in this page require a bearer session and a membership in `{home_
 
 ### `GET /api/v1/me`
 
-Operation ID: `me_api_v1_me_get`. Returns the authenticated actor, their home and resident display name, the first configured device (if present), and whether runtime processing is paused.
+Operation ID: `me_api_v1_me_get`. Returns the authenticated actor, their care
+space and resident display name, the latest enabled camera (if present), and
+whether runtime processing is paused. The home object also returns
+`careSetting` (`home` or `residence`) and `supportFocus` (`general` or `mci`),
+which clients use to keep live setup language and care context consistent.
 
 ### `GET /api/v1/homes/{home_id}/runtime`
 
@@ -16,11 +20,22 @@ Operation ID: `runtime_api_v1_homes__home_id__runtime_get`. Returns `{ home_id, 
 
 ### `GET /api/v1/homes/{home_id}/cameras`
 
-Operation ID: `cameras_api_v1_homes__home_id__cameras_get`. Returns `{ data: [...] }` with camera read models.
+Operation ID: `cameras_api_v1_homes__home_id__cameras_get`. Returns `{ data:
+[...] }` with enabled camera read models, newest first. Each read model includes
+the publisher-backed device name plus `online` / `paused` status from the
+current runtime state.
 
 ### `POST /api/v1/homes/{home_id}/cameras`
 
 Operation ID: `camera_api_v1_homes__home_id__cameras_post`. Request (`CameraIn`) requires `name` (1–120 chars) and accepts nullable `room_id`. Creates an enabled camera and returns its ID, fields, and `enabled: true`.
+
+### `DELETE /api/v1/homes/{home_id}/cameras/{camera_id}`
+
+Operation ID: `camera_delete_api_v1_homes__home_id__cameras__camera_id__delete`.
+Admin/caregiver operation that disables the camera, invalidates its active
+calibration, revokes its publisher session, and clears unused pairing codes.
+The camera row remains as an audit-safe tombstone for historical map and
+observation references.
 
 ## Rooms
 

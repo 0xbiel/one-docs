@@ -4,7 +4,14 @@ These operations create a home/member, authenticate a persistent email identity 
 
 ## `POST /api/v1/auth/email/request`
 
-Requests a passwordless email challenge. `purpose` is `create` or `login`. Email identifiers are trimmed and case-folded before lookup and storage. `create` requires `display_name` and creates the home, membership, and runtime records before issuing the challenge; `login` selects the first non-publisher household membership for the existing email identity. The response includes a `verification_id`, normalized `email`, `home_id`, `user_id`, role, and 600-second expiry.
+Requests a passwordless email challenge. `purpose` is `create` or `login`.
+Email identifiers are trimmed and case-folded before lookup and storage.
+`create` requires `display_name`, accepts `care_setting` (`home` or
+`residence`) and `support_focus` (`general` or `mci`), and creates the care
+space, membership, and runtime records before issuing the challenge; `login`
+selects the first non-publisher household membership for the existing email
+identity. The response includes a `verification_id`, normalized `email`,
+`home_id`, `user_id`, role, and 600-second expiry.
 
 The local development/test response also includes `dev_code` and `delivery: development_outbox`; this is a deliberately bounded outbox because the Docker MVP has no external mail subscription. Production must connect a mail delivery adapter and must not expose `dev_code`.
 
@@ -25,10 +32,16 @@ Operation ID: `pairing_start_api_v1_pairing_start_post`. Creates a home, user, m
 Request (`PairStart`):
 
 ```json
-{"display_name":"Demo resident","email":"demo@example.invalid","home_name":"ONE Home","role":"resident"}
+{"display_name":"Demo resident","email":"demo@example.invalid","home_name":"ONE Home","care_setting":"home","support_focus":"mci","role":"resident"}
 ```
 
-`display_name` is required (1–120 chars). `email` is optional (max 254), `home_name` defaults to `ONE Home`, and `role` is `admin`, `resident`, or `caregiver` (default `admin`). The response contains `pairing_code`, `expires_in_seconds`, `home_id`, `user_id`, and `role`. Treat the code as secret and do not log it.
+`display_name` is required (1–120 chars). `email` is optional (max 254),
+`home_name` defaults to `ONE Home`, `care_setting` defaults to `home`,
+`support_focus` defaults to `general`, and `role` is `admin`, `resident`, or
+`caregiver` (default `admin`). The care fields describe setup context only;
+`support_focus=mci` does not make ONE a diagnostic system. The response
+contains `pairing_code`, `expires_in_seconds`, `home_id`, `user_id`, and
+`role`. Treat the code as secret and do not log it.
 
 ## `POST /api/v1/pairing/complete`
 
@@ -44,7 +57,7 @@ Publisher pairing is not a general household invite. Publisher accounts are excl
 
 ## `GET /api/v1/homes/{home_id}/pairing/{pairing_id}/status`
 
-Operation ID: `device_pairing_status_api_v1_homes__home_id__pairing__pairing_id__status_get`. Admin/caregiver operation used by the dashboard pairing modal. It returns the device-scoped `pairing_id`, `home_id`, expiry, `device` summary, and `status` (`pending`, `connected`, or `expired`). It never returns the pairing code. `connected` records that the one-time code was consumed; LiveKit media presence is a separate signal and is not implied by this response.
+Operation ID: `device_pairing_status_api_v1_homes__home_id__pairing__pairing_id__status_get`. Admin/caregiver operation used by both the web and native iOS pairing surfaces. It returns the device-scoped `pairing_id`, `home_id`, expiry, `device` summary, and `status` (`pending`, `connected`, or `expired`). It never returns the pairing code. `connected` records that the one-time code was consumed; LiveKit media presence is a separate signal and is not implied by this response.
 
 ## `DELETE /api/v1/sessions/current`
 

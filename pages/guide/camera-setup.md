@@ -1,16 +1,18 @@
 # Add a phone as a camera
 
-ONE currently uses two separate surfaces during camera setup:
+ONE uses two roles during camera setup:
 
-- The **caregiver dashboard** creates and monitors the device pairing.
+- The **caregiver web dashboard or native iOS app** creates and monitors the
+  device pairing against the same authenticated backend state.
 - The **camera device** opens ONE in Safari, accepts the one-time code, grants
   consent, completes the room sweep, and publishes the camera.
 
-The native iOS app is currently a caregiver/resident client and the producer
-for LiDAR RoomPlan scans. It does **not** yet run as a continuous camera
-publisher. To use an iPhone as the camera today, use the browser publisher flow
-below. Do not enter a camera pairing code into the native app's household
-sign-in form; publisher pairing and person sign-in are different credentials.
+The native iOS app is a caregiver/resident client, can create and monitor a
+publisher pairing code from **Home → Cameras**, and produces LiDAR RoomPlan
+scans. It does **not** yet run as a continuous camera publisher. To use an
+iPhone as the fixed camera today, use the browser publisher flow below. Do not
+enter a camera pairing code into the native app's household sign-in form;
+publisher pairing and person sign-in are different credentials.
 
 ## Before you begin
 
@@ -29,12 +31,14 @@ reported Tailscale HTTPS URL rather than a Mac-only loopback URL.
 
 ## Pair the camera
 
-On the caregiver device:
+On the caregiver device, use either setup surface:
 
-1. Open the ONE dashboard.
-2. Select **Pair a camera** in the Camera connection section.
-3. Keep the pairing sheet open and copy the six-digit code. The code expires
-   after ten minutes and can be used only once.
+1. In the web dashboard, select **Pair a camera** in the Camera connection
+   section; or in the native iOS app open **Home → Cameras → Pair camera**.
+2. Give the device a recognizable name and generate the six-digit code.
+3. Keep the pairing sheet open. The code expires after ten minutes and can be
+   used only once. Both clients poll the real pairing-status endpoint rather
+   than inferring connection from general backend health.
 
 On the iPhone that will become the camera:
 
@@ -51,9 +55,10 @@ On the iPhone that will become the camera:
 Back on the caregiver device:
 
 1. Wait for the pairing state to change from **Waiting** to **Camera
-   connected**.
-2. Give the camera a recognizable name and placement, then select **Save camera
-   setup**.
+   connected**. The native iOS Cameras section also refreshes its real enabled
+   camera list and shows the backend-reported online/paused state.
+2. On the web dashboard, optionally refine the camera name and placement, then
+   select **Save camera setup**.
 3. Open the live view. A connected pairing confirms the device credential; a
    visible feed confirms that LiveKit publishing is also working.
 

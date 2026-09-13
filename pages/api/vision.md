@@ -4,13 +4,20 @@ For exact operation IDs and schema constraints, see [Objects, vision & events](/
 
 ## Frame contract
 
-`POST /api/v1/homes/{home_id}/vision/frames` accepts a camera ID, base64 frame bytes (maximum 3 MB after decode), width/height, one to 20 candidate labels, optional capture timestamp, and optional positive depth in meters. Labels for face, person identity, emotion, and medical symptom are rejected.
+`POST /api/v1/homes/{home_id}/vision/frames` accepts a camera ID, base64 frame bytes (maximum 3 MB after decode), width/height, zero to 20 candidate labels, optional capture timestamp, and optional positive depth in meters. With no labels, the backend uses enabled household-object labels and then a bounded household-item default vocabulary. Labels for face, identity, emotion, medical symptom, and diagnosis inference are rejected.
 
-The response includes detections, a detector version, `persisted: false`, and a privacy note that frame bytes were processed in memory and not stored.
+The response includes detections, a detector version, any derived observation/event IDs, `frames_persisted: false`, and a privacy note that frame bytes were processed in memory and not stored.
 
 ## Detection contract
 
-Each detection carries a candidate label, confidence, bounding box, and projection. Temporal tracking stabilizes repeated hits. The default model version is `demo-deterministic-v1`; the OWLv2-compatible adapter reports `owlv2-unconfigured` until an inference function is injected.
+Each detection carries a candidate label, confidence, bounding box, and projection. Temporal tracking stabilizes repeated hits. Production detection is performed by the configured local YOLO-World checkpoint through the geometry worker; an unavailable worker returns `503` rather than silently switching to a fake detector.
+
+If the camera has an active RoomPlan registration, the projection uses its
+stored camera transform and intrinsics (or a bounded FOV estimate) to intersect
+the detection ray with RoomPlan floor geometry. The response can then include
+`world_xyz` in `roomplan-local`, uncertainty, `quality: calibrated-floor-ray`,
+and the matching `room_zone`. Without a usable registration, projection remains
+an explicit approximate fallback.
 
 ## Summary contract
 
