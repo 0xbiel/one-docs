@@ -109,6 +109,29 @@ declarations. Missing provenance, missing LiDAR evidence, malformed geometry,
 or a browser payload returns `422`. A browser client must never call this route
 to turn an RGB map into 3D.
 
+The native client sends the reachable authenticated API base URL configured for
+the deployment (for example, the Tailscale HTTPS URL on a phone); it must not
+use the phone's own `localhost` address.
+
+### `PUT /api/v1/homes/{home_id}/maps/{map_id}/usdz`
+
+Attaches the optional exported RoomPlan USDZ to a validated native 3D map. The
+request body is binary with content type `model/vnd.usdz+zip` (the backend also
+accepts compatible ZIP content types). The upload is idempotent for the map
+attachment key, requires the same home authorization as the map, is limited to
+50 MiB, rejects unsafe ZIP entries and packages without a USD asset, and stores
+the SHA-256 digest in map metadata. The response includes `available`, byte
+count, digest, content type, and the authenticated download path.
+
+### `GET /api/v1/homes/{home_id}/maps/{map_id}/usdz`
+
+Downloads the persisted native attachment with private cache headers, an
+`ETag` based on the SHA-256 digest, and an inline `.usdz` filename. Missing or
+failed attachments return `404`; they do not change the canonical structured
+RoomPlan scene or enable a fabricated fallback model. Export includes the
+attachment metadata, and a completed privacy deletion removes both the
+structured map artifacts and the USDZ object.
+
 ### `POST /api/v1/homes/{home_id}/maps`
 
 The generic map upload accepts `map_data`, optional `room_id`, and a coordinate

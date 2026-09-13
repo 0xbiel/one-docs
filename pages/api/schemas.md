@@ -40,7 +40,9 @@ frontend from treating a browser visualization or an old zone rectangle as a
 | --- | --- | --- |
 | `CameraMapGenerationStartIn` | automatic camera sweep start | optional room/label/orientation; required positive source resolution |
 | `CameraMapFrameIn` / `CameraMapFramesIn` | paired publisher samples | 3–20 frames with base64 bytes, positive width/height, optional capture time; bytes are bounded and ephemeral |
+| `RoomPlanNormalizedScan` / `RoomPlanElement` | native LiDAR upload | versioned native RoomPlan geometry with walls, floors, openings, doors, windows, objects, sections, finite 4×4 transforms, positive dimensions, and metric Y-up `roomplan-local` coordinates |
 | `RoomPlanScanMetadata` | native LiDAR upload | `provenance=native-roomplan`, device model, `lidar=true`, RoomPlan version, metric units, Y up-axis, and `geometry_type=3d` |
+| `USDZAsset` | scene/map response | optional persisted attachment metadata: availability, SHA-256, byte count, content type, and authenticated download path |
 | `RoomLayoutResult` | private geometry-service result | `camera-cv-2d`, `2d`, normalized polygons/walls, relative camera pose, confidence metrics, and `metric_scale_known=false` |
 | Scene | dashboard map | scene ID, revision, source, dimension, geometry status, zones, optional walls/camera pose, confidence, and metric-scale flag |
 
@@ -72,6 +74,9 @@ replaces the previous valid map.
 - legacy-2d can be displayed in 2D for migration, but cannot enable 3D.
 - A browser request that claims RoomPlan or LiDAR is rejected with 422.
 - A 2D map is never extruded, padded, or converted into a 3D model by the API.
+- A USDZ attachment is accepted only for a validated `roomplan-lidar-3d` map;
+  it is a bounded 50 MiB ZIP attachment and does not replace the structured
+  RoomPlan scene.
 
 Example camera map metadata:
 
@@ -93,9 +98,11 @@ Example native 3D provenance:
   "source": "roomplan-lidar-3d",
   "producer": "native-ios",
   "framework": "RoomPlan",
-  "lidar_used": true,
-  "units": "meters",
-  "up_axis": "Y"
+  "lidar": true,
+  "units": "m",
+  "up_axis": "Y",
+  "coordinate_frame": "roomplan-local",
+  "geometry_type": "3d"
 }
 ~~~
 

@@ -47,9 +47,13 @@ result must leave the prior map unchanged.
 Treat a 3D map as valid only when a native physical LiDAR fixture includes
 RoomPlan provenance, metric units, an up axis, a coordinate frame, and valid
 3D geometry. Browser RGB data, Simulator data, and generic normalized scan JSON
-must not enable the 3D view. The backend tests cover the strict RoomPlan
-rejection path and a valid native-like fixture; physical-device capture remains
-an iOS acceptance test.
+must not enable the 3D view. The backend tests cover valid native payloads,
+malformed/non-LiDAR rejection, generic-map 3D-looking JSON, authenticated USDZ
+size/type/hash/download/deletion behavior, and unchanged camera-sweep behavior.
+The iOS XCTest target covers conversion of every RoomPlan element category,
+finite transforms and positive dimensions, exact native routes and metadata,
+USDZ upload/download, callback failures, and the Simulator capability gate.
+Physical-device capture remains an iOS acceptance test.
 
 ## Frontend
 
@@ -65,4 +69,10 @@ The focused tests assert backend event mapping, non-diagnostic language, app ren
 
 ## iOS
 
-Open `one-ios/One.xcodeproj` in Xcode and run the `One` scheme on a supported iPhone. `RoomPlanCapability.isSupported` intentionally returns false on Simulator. Run the `OneTests` XCTest target for model/store coverage. A parser or simulator build cannot prove LiDAR capture behavior.
+Open `one-ios/One.xcodeproj` in Xcode and run the `One` scheme on a supported
+LiDAR iPhone or iPad. `RoomPlanCapability.isSupported` intentionally returns
+false on Simulator. Use the deployed reachable HTTPS API base URL on the
+device, complete a scan, confirm the native JSON POST, USDZ PUT, scene refresh,
+reload persistence, and RealityKit rendering. Run the `OneTests` XCTest target
+for model/store coverage. A parser or simulator build cannot prove LiDAR
+capture behavior.

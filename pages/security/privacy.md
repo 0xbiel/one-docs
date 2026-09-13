@@ -35,7 +35,12 @@ must include these derived records.
 RoomPlan data has a different provenance boundary. A 3D map is retained only
 after native iOS provenance, LiDAR capability, schema, coordinate frame, units,
 up axis, and geometry have been validated. A browser RGB sample never creates a
-3D artifact.
+3D artifact. The structured `roomplan-normalized.v1` JSON is canonical. If the
+native client uploads the optional USDZ export, it is authenticated, limited to
+50 MiB, validated as a ZIP package containing a USD asset, stored under a
+home/map-scoped object key, and recorded with a SHA-256 digest. Export includes
+the attachment metadata without exposing bearer credentials, and completed
+privacy deletion removes both the structured map objects and the USDZ object.
 
 If the local M3 Pro worker is unavailable, no sample set is retained as a map.
 The backend may retain a terminal job status and bounded error code for

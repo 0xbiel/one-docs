@@ -30,6 +30,11 @@ This page is intentionally direct: it is the checklist that keeps a demo from be
 - LiveKit token/publisher scaffolding and a viewer surface exist; a verified production LiveKit subscriber path is not complete.
 - Browser camera success depends on secure origin, permissions, hardware, network, and a real LiveKit deployment.
 - RoomPlan requires supported iPhone or iPad hardware and native capture; Safari cannot capture it. Simulator and non-LiDAR devices use the 2D/legacy path, not a 3D model.
+- Native RoomPlan export and scene upload are implemented, but acceptance still
+  requires a physical LiDAR device: simulator tests can prove the capability
+  gate and contract, not sensor capture, RoomBuilder output, or USDZ rendering.
+  The structured RoomPlan JSON is canonical; USDZ is an optional 50 MiB
+  attachment and a missing attachment leaves a retryable 3D asset state.
 - Camera-derived RGB geometry has relative scale only. A camera pose or reprojection estimate is not a measured accuracy in meters.
 - The LLM adapter depends on a locally reachable LM Studio endpoint; fallback summaries are deterministic and non-medical.
 - OWLv2 remains an injected/unconfigured adapter contract; no production model deployment is included.
