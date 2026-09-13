@@ -148,24 +148,28 @@ one-ios target on a physical supported device.
 
 ## LiDAR-to-camera registration
 
-The browser camera pose and native RoomPlan geometry currently use independent
-coordinate frames. The backend does not yet solve a transform between them,
-so a paired camera is not automatically rendered at a metric position inside
-the RoomPlan scene.
+The native app now registers a paired camera directly from the AR camera pose
+captured inside the same RoomPlan session. The selected camera must be the same
+physical iPhone performing the scan and the scan must end with that device held
+still in its final fixed pose. The app serializes the finite 4×4
+`camera_to_world` matrix in the RoomPlan local coordinate frame.
 
-The intended registration stage must compare camera-visible structural
-features against the native RoomPlan walls and openings, estimate camera
-extrinsics in `roomplan-local`, retain reprojection and confidence metrics, and
-return `needs_rescan` instead of accepting an ambiguous match. A pairing
-success, a fixed-placement confirmation, or a relative RGB pose alone must not
-be presented as LiDAR registration.
+`POST /api/v1/homes/{home_id}/camera-registrations/roomplan` accepts only an
+enabled camera and the active `roomplan-lidar-3d` / `roomplan-local` map. Normal
+tracking stores an active `auto-roomplan-registration` calibration. Limited or
+unavailable tracking is stored as `needs_rescan` and no world pose is exposed
+to scene consumers. Creating a new map revision invalidates the old placement.
+
+The browser camera pose remains independent camera-relative 2D evidence. It is
+never converted or relabeled as RoomPlan registration. A pairing success, a
+browser fixed-placement confirmation, or a relative RGB pose alone must not be
+presented as a metric 3D camera position.
 
 ## Current checkout status
 
-The native app can capture, normalize, and upload a strict RoomPlan scene and
-attach its USDZ model. The paired browser flow can independently generate a
-camera-relative 2D map and pose. LiDAR-to-camera registration remains
-unimplemented, so the current UI must not present the relative camera pose as
-an automatically located camera in the 3D RoomPlan scene. Existing
-camera-provisional, roomplan-normalized, or missing-dimension records are
-normalized to legacy-2d/rescan-required by the backend migration.
+The native app can capture, normalize, and upload a strict RoomPlan scene,
+attach its USDZ model, and register the same physical paired iPhone into the
+RoomPlan frame. The scene contract exposes that state separately as
+`cameraRegistration` with `positioned`, `needs_rescan`, or `unavailable`.
+Existing camera-relative 2D maps remain separate and cannot unlock metric 3D
+camera placement.
