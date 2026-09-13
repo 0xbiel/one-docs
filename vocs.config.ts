@@ -10,6 +10,9 @@ export default defineConfig({
   srcDir: '.',
   logoUrl: '/one-logo.png',
   iconUrl: '/one-logo.png',
+  head: {
+    link: [{ rel: 'stylesheet', href: '/mermaid.css' }],
+  },
   theme: {
     accentColor: {
       light: '#1769e8',
