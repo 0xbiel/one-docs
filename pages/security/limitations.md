@@ -11,9 +11,10 @@ This page is intentionally direct: it is the checklist that keeps a demo from be
   prove that a room-layout worker ran.
 - The local M3 Pro PyTorch/MPS room-layout worker is a separate host process,
   not a Compose service. The backend has the persistent map-generation job
-  route, but model mode still requires an explicitly supplied TorchScript
-  checkpoint/configuration and working accelerator. Until that is installed,
-  live jobs correctly report unavailable instead of creating a fallback map.
+  route, and model mode requires the real YOLOv8-World v2 checkpoint, its
+  configuration, Ultralytics/OpenCV dependencies, and a working accelerator.
+  Until those are installed, live jobs correctly report unavailable instead of
+  creating a synthetic map.
 - The 3D view is reserved for a validated native RoomPlan artifact with
   LiDAR provenance. Safari, a browser camera, Simulator, and a non-LiDAR
   device cannot unlock it.

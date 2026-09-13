@@ -41,12 +41,12 @@ export default defineConfig({
   ],
   sidebar: {
     '/guide/': [
-      { text: 'Start here', items: [{ text: 'Quickstart', link: '/guide/quickstart' }, { text: 'Environment setup', link: '/guide/environment' }, { text: 'Demo guide', link: '/demo' }] },
+      { text: 'Start here', items: [{ text: 'Quickstart', link: '/guide/quickstart' }, { text: 'Add a phone camera', link: '/guide/camera-setup' }, { text: 'Environment setup', link: '/guide/environment' }, { text: 'Demo guide', link: '/demo' }] },
       { text: 'Operate ONE', items: [{ text: 'Docker stack', link: '/guide/docker' }, { text: 'PostgreSQL adapter', link: '/guide/postgresql' }, { text: 'Troubleshooting', link: '/guide/troubleshooting' }, { text: 'Testing', link: '/guide/testing' }] },
     ],
     '/architecture/': [
       { text: 'System', items: [{ text: 'Overview', link: '/architecture/overview' }, { text: 'Repository map', link: '/architecture/repos' }, { text: 'Family mode', link: '/architecture/family' }, { text: 'Object memory & calibration', link: '/architecture/memory' }] },
-      { text: 'Clients', items: [{ text: 'Web app', link: '/architecture/web' }, { text: 'Camera mapping', link: '/architecture/camera-mapping' }, { text: 'iOS & RoomPlan', link: '/architecture/ios' }, { text: 'Browser camera pairing', link: '/architecture/browser-camera' }] },
+      { text: 'Clients', items: [{ text: 'Web app', link: '/architecture/web' }, { text: 'Camera mapping', link: '/architecture/camera-mapping' }, { text: 'Real geometry model', link: '/architecture/real-geometry-model' }, { text: 'iOS & RoomPlan', link: '/architecture/ios' }, { text: 'Browser camera pairing', link: '/architecture/browser-camera' }] },
     ],
     '/api/': [
       { text: 'Contract', items: [{ text: 'API overview', link: '/api/overview' }, { text: 'Auth, pairing & sessions', link: '/api/auth-sessions' }, { text: 'Schemas & errors', link: '/api/schemas' }, { text: 'Request examples', link: '/api/examples' }] },

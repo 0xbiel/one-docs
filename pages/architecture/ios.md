@@ -6,7 +6,13 @@ The iOS app is a native SwiftUI vertical slice with resident, caregiver, and fam
 - **Resident:** Today, Assistant, and Account tabs.
 - **Family:** Care-circle members, least-privilege roles, shared medication reminders, and caregiver assistant actions.
 
-`AppStore.demo` seeds the UI with a home map, zones, a blue mug object, sample events, consent records, multiple caregiver accounts, and medication doses. In live mode, passwordless email challenge/verification, invitation acceptance tied to the invited email, session restoration in Keychain, onboarding consent writes, and logout use the FastAPI contract. Email identity is the durable household boundary when a person changes phones; camera pairing remains a separate device-scoped flow. The local development outbox exposes a one-time code because no mail subscription is required for the MVP.
+`AppStore.demo` seeds the UI with a home map, zones, a blue mug object, sample events, consent records, multiple caregiver accounts, and medication doses. In live mode, authentication begins with a focused welcome choice for sign in, account creation, or household invitation. Email sign in then advances to a dedicated short-lived code confirmation screen with change-email and resend actions. Invitation acceptance, session restoration in Keychain, onboarding consent writes, and logout use the FastAPI contract. Email identity is the durable household boundary when a person changes phones; camera pairing remains a separate device-scoped flow. The local development outbox exposes a one-time code because no mail subscription is required for the MVP.
+
+The native app does not currently support the backend `publisher` role or run
+as a continuous camera source. An iPhone used as a household camera must open
+the web `/join` publisher flow in Safari. The native app remains the
+caregiver/resident experience and the LiDAR RoomPlan producer. See [Add a phone
+as a camera](/guide/camera-setup).
 
 `RuntimeConfiguration` reads `ONE_API_BASE_URL` from the generated Info.plist. Any configured URL, including the default `http://127.0.0.1:8000/api/v1`, is live; demo data is reserved for previews and tests that omit the value. For a tailnet deployment, set the build setting to the Tailscale HTTPS URL plus `/api/v1`; keep certificates and tokens out of source control. Session material belongs in the Keychain abstraction, and local artifacts can use the AES-GCM helper.
 
@@ -92,7 +98,13 @@ The Account/Settings view exposes purpose-level consent, pause/resume controls, 
 
 `OneTheme` centralizes adaptive canvas, surface, inverse-surface, ink, secondary ink, blue, cyan, mint, and amber tokens. The app keeps dark inverse surfaces for camera/assistant cards while adapting the canvas and text to light/dark traits. `LiquidGlassControl` uses `glassEffect` on iOS 26 and a material fallback on earlier systems.
 
-Onboarding follows PocketDetour's paced, single-purpose flow: a compact progress header, a large rounded illustration panel, short copy, consent cards, page indicators, and a pinned primary action. The artwork is generated from native SwiftUI `Canvas` paths and SF Symbols so it remains crisp, accessible, and free of image assets.
+Authentication and onboarding use a restrained, content-first visual system:
+an adaptive plain canvas, a centered width-limited content column, strong
+editorial hierarchy, quiet outlined controls, generous whitespace, and a
+single clear primary action. Authentication progressively reveals only the
+chosen form and then the email-code confirmation state. Onboarding keeps one
+purpose per page with a compact progress header, explicit Allow/Not now
+choices, page indicators, and a clear Continue/Finish action.
 
 The project targets iOS 26.0 and RoomPlan must be validated on a physical
 LiDAR-capable device. Simulator, non-LiDAR devices, and Safari use the

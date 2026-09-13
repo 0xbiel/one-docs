@@ -30,8 +30,9 @@ The site uses Vocs 2.9, TypeScript configuration, and `style.css` for the ONE sh
 The map contract is intentionally split by provenance: a browser camera can
 produce relative 2D geometry after a guided sweep, while a 3D model requires a
 validated native iPhone or iPad LiDAR RoomPlan artifact. See
-[Camera mapping](pages/architecture/camera-mapping.md) for the behavioral
-job states, privacy boundary, local M3 Pro worker contract, exact current
+[Camera mapping](pages/architecture/camera-mapping.md) and the
+[real geometry model](pages/architecture/real-geometry-model.md) for the
+behavioral job states, privacy boundary, real local detector, exact current
 backend map routes, and the remaining native iOS RoomPlan producer work.
 
 ## Content boundary

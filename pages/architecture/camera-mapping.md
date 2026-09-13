@@ -8,7 +8,7 @@ RoomPlan model.
 
 | Source | Dimension | Producer | Stored geometry | Scale | Dashboard |
 | --- | --- | --- | --- | --- | --- |
-| camera-cv-2d | 2D | Paired browser camera and the local room-layout service | Relative polygons, wall segments, camera pose, confidence, and model metadata | Relative only; metric_scale_known=false | Accessible 2D map |
+| camera-cv-2d | 2D | Paired browser camera, real YOLOv8-World v2 worker, and OpenCV structural estimator | Relative polygons, wall segments, detected furniture, doors/windows, camera pose, confidence, and model metadata | Relative by default; optional caregiver reference scale; metric_scale_known=false | Accessible 2D map |
 | roomplan-lidar-3d | 3D | Native iPhone or iPad RoomPlan on supported LiDAR hardware | Validated RoomPlan walls, openings, floors, objects, coordinate frame, and artifact metadata | Metric coordinates supplied by RoomPlan, still approximate | 3D view |
 | legacy-2d | 2D | Older provisional or manual-zone records | Zone labels or rectangles without camera-derived geometry | Unknown | 2D only, marked for rescan |
 
@@ -30,9 +30,10 @@ The camera device stays on the publisher setup page after pairing:
    room boundary, then place the camera in its fixed position.
 4. The device submits bounded RGB samples for that camera. The caregiver page
    polls the generation resource and remains on the same setup sheet.
-5. The local room-layout worker derives relative polygons, walls, camera pose,
-   confidence, and a model version. Raw frame bytes are discarded after the
-   job finishes.
+5. The local room-layout worker runs the configured real model on the sweep,
+   derives relative polygons and walls from visible structure, and returns
+   detected furniture, doors, windows, camera pose, confidence, and model
+   version. Raw frame bytes are discarded after the job finishes.
 6. A ready result becomes the current 2D map. There are no three-anchor buttons
    and no navigation to a separate manual calibration page.
 
@@ -62,7 +63,7 @@ The current backend exposes these exact map routes:
 | Route | Current behavior |
 | --- | --- |
 | GET /api/v1/homes/{home_id}/maps | Lists stored map records, newest revision first |
-| GET /api/v1/homes/{home_id}/maps/current | Returns the newest map or 404 when none exists |
+| GET /api/v1/homes/{home_id}/maps/current | Returns the newest eligible real-model map or 404 when none exists; historical fixture revisions are not active |
 | GET /api/v1/homes/{home_id}/maps/{map_id} | Returns one map record or 404 |
 | GET /api/v1/homes/{home_id}/scene | Returns scene ID, revision, source, dimension, geometry status, zones, polygons, walls, camera pose, confidence, and map ID |
 | POST /api/v1/homes/{home_id}/maps/provisional | Compatibility route; stores caller-supplied zones as legacy-2d and marks them rescan-required |
@@ -91,30 +92,34 @@ backend calls the configured `ONE_GEOMETRY_SERVICE_URL` at
 
 - input is a bounded sequence of RGB frames for one authorized camera, with
   source dimensions, capture timestamps, orientation, and room label;
-- processing is local to the M3 Pro host through PyTorch with MPS required by
-  the production configuration; no frame is sent to a cloud or paid vision
+- processing is local to the M3 Pro host through PyTorch/MPS and the configured
+  YOLOv8-World v2 checkpoint; no frame is sent to a cloud or paid vision
   provider;
-- success returns normalized polygons, wall segments, a relative camera pose,
-  confidence, model version, source resolution, and
-  metric_scale_known=false;
+- success returns normalized polygons, wall segments, detected furniture,
+  door/window openings, a relative camera pose, confidence, model version,
+  source resolution, and metric_scale_known=false;
 - low coverage or low confidence returns needs_rescan and no new map;
 - worker reachability or device failure returns unavailable and no new map;
 - malformed input or an exception returns failed and frame bytes are discarded.
 
 The checkout includes the host-side service in `one/geometry_service/`. Model
-mode requires an explicit TorchScript checkpoint/configuration and a working
-PyTorch accelerator. If the service is not ready, the API marks a generation
-job unavailable; it does not silently switch to a rectangle or object-detection
-fallback. `ONE_GEOMETRY_MODE=mock` is an explicit test-only fixture.
+mode requires the real YOLOv8-World v2 checkpoint, its checked-in configuration,
+Ultralytics/OpenCV dependencies, and a working PyTorch accelerator. If the
+service is not ready, the API marks a generation job unavailable; it does not
+silently switch to a rectangle, synthetic object list, or alternate fallback.
+See [Real camera geometry model](/architecture/real-geometry-model) for the
+installation and health contract.
 
 ## Derived 2D payload
 
 A camera map contains the following reviewable fields:
 
 - normalized polygon vertices and wall segments in a camera-relative frame;
+- model-detected furniture items and door/window opening segments when visible;
 - the relative camera pose and image-space transform used for the projection;
 - a 0–1 overall confidence and per-geometry confidence where available;
-- source resolution, capture interval, job ID, and room-layout model version;
+- source resolution, capture interval, job ID, real room-layout model version,
+  detection counts, and structural-estimation method;
 - source camera-cv-2d, dimension 2d, and metric_scale_known=false.
 
 The frontend renders this data as accessible SVG. It should not add missing
@@ -141,10 +146,26 @@ Safari can request camera and microphone access, but it cannot run Apple
 RoomPlan. RoomPlan capture and serialization must happen in the native
 one-ios target on a physical supported device.
 
+## LiDAR-to-camera registration
+
+The browser camera pose and native RoomPlan geometry currently use independent
+coordinate frames. The backend does not yet solve a transform between them,
+so a paired camera is not automatically rendered at a metric position inside
+the RoomPlan scene.
+
+The intended registration stage must compare camera-visible structural
+features against the native RoomPlan walls and openings, estimate camera
+extrinsics in `roomplan-local`, retain reprojection and confidence metrics, and
+return `needs_rescan` instead of accepting an ambiguous match. A pairing
+success, a fixed-placement confirmation, or a relative RGB pose alone must not
+be presented as LiDAR registration.
+
 ## Current checkout status
 
-The native app can start a RoomCaptureSession, but its captured result is not
-yet converted into the strict upload contract. Existing camera-provisional,
-roomplan-normalized, or missing-dimension records are already normalized to
-legacy-2d/rescan-required by the backend migration. This documentation
-deliberately does not present them as automatic CV geometry or a real 3D model.
+The native app can capture, normalize, and upload a strict RoomPlan scene and
+attach its USDZ model. The paired browser flow can independently generate a
+camera-relative 2D map and pose. LiDAR-to-camera registration remains
+unimplemented, so the current UI must not present the relative camera pose as
+an automatically located camera in the 3D RoomPlan scene. Existing
+camera-provisional, roomplan-normalized, or missing-dimension records are
+normalized to legacy-2d/rescan-required by the backend migration.

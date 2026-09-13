@@ -43,8 +43,8 @@ frontend from treating a browser visualization or an old zone rectangle as a
 | `RoomPlanNormalizedScan` / `RoomPlanElement` | native LiDAR upload | versioned native RoomPlan geometry with walls, floors, openings, doors, windows, objects, sections, finite 4×4 transforms, positive dimensions, and metric Y-up `roomplan-local` coordinates |
 | `RoomPlanScanMetadata` | native LiDAR upload | `provenance=native-roomplan`, device model, `lidar=true`, RoomPlan version, metric units, Y up-axis, and `geometry_type=3d` |
 | `USDZAsset` | scene/map response | optional persisted attachment metadata: availability, SHA-256, byte count, content type, and authenticated download path |
-| `RoomLayoutResult` | private geometry-service result | `camera-cv-2d`, `2d`, normalized polygons/walls, relative camera pose, confidence metrics, and `metric_scale_known=false` |
-| Scene | dashboard map | scene ID, revision, source, dimension, geometry status, zones, optional walls/camera pose, confidence, and metric-scale flag |
+| `RoomLayoutResult` | private geometry-service result | `camera-cv-2d`, `2d`, real-model normalized polygons/walls, detected furniture, door/window openings, relative camera pose, confidence metrics, and `metric_scale_known=false` |
+| Scene | dashboard map | scene ID, revision, source, dimension, geometry status, zones, furniture, openings, optional walls/camera pose, reference scale, confidence, model version, and metric-scale flag |
 
 The generation routes return a stable job view containing `job_id`, `status`,
 `progress`, `source`, `dimension`, `metric_scale_known`, frame count,
@@ -87,7 +87,7 @@ Example camera map metadata:
   "geometry_status": "ready",
   "metric_scale_known": false,
   "confidence": 0.81,
-  "model_version": "local-room-layout-v1"
+  "model_version": "yolov8s-worldv2-indoor-objects-v1"
 }
 ~~~
 

@@ -48,12 +48,16 @@ dashboard uses this gate once those fields are available:
 Operation ID: `maps_api_v1_homes__home_id__maps_get`. Returns the stored map
 read models, newest revision first. The current response includes the map
 record, map data, coordinate frame, source, approximate flag,
-localization status, metadata, and revision.
+localization status, metadata, optional reference scale, detected furniture,
+door/window openings, and revision.
 
 ### `GET /api/v1/homes/{home_id}/maps/current`
 
 Operation ID: `current_map_api_v1_homes__home_id__maps_current_get`. Returns
-the newest map read model or `404 No room map has been uploaded`.
+the newest eligible map read model or `404 No room map has been uploaded`.
+Camera-derived revisions are eligible only when they carry real geometry-model
+provenance; historical fixture revisions remain listable for audit but cannot
+drive the current map or scene.
 
 ### `GET /api/v1/homes/{home_id}/maps/{map_id}`
 
@@ -64,9 +68,10 @@ map read model or `404 Map not found`.
 
 Operation ID: `scene_api_v1_homes__home_id__scene_get`. The current response
 contains `sceneId`, `version`, `source`, `dimension`, `geometryStatus`,
-`rescanRequired`, `zones`, `polygons`, `walls`, `camera`, `confidence`, `mapId`,
-and `coordinateFrame`. An empty home returns a null scene with version zero and
-`rescanRequired: true`.
+`rescanRequired`, `zones`, `polygons`, `walls`, detected `furniture`,
+door/window `openings`, `camera`, `confidence`, optional `scale`, `modelVersion`,
+`mapId`, and `coordinateFrame`. An empty home returns a null scene with version
+zero and `rescanRequired: true`.
 
 ### `POST /api/v1/homes/{home_id}/maps/provisional`
 
@@ -96,6 +101,14 @@ is limited to 3 MB after decoding and a batch to 18 MB. The publisher can only
 submit frames for its own camera; caregivers/admins can read status. The job
 states are `collecting`, `processing`, `ready`, `needs_rescan`, `unavailable`,
 and `failed`. Only `ready` creates a new map revision.
+
+### `POST /api/v1/homes/{home_id}/maps/{map_id}/scale`
+
+The caregiver can persist a reference scale for a real camera-derived map by
+submitting two normalized map points, a measured `length_m`, and a label. The
+response stores `method: "caregiver_reference"` and the conversion used by the
+map ruler. This does not turn RGB geometry into RoomPlan/LiDAR metric data; the
+map remains an approximate 2D camera map.
 
 ### `POST /api/v1/homes/{home_id}/maps/roomplan`
 

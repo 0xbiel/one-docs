@@ -30,7 +30,8 @@ The diagram intentionally shows PostgreSQL and the object store behind FastAPI, 
 ## Map provenance boundary
 
 The camera sweep and native RoomPlan scan are different evidence paths. The
-local M3 Pro geometry worker consumes temporary RGB samples and can return only
+local M3 Pro geometry worker runs the real YOLOv8-World v2 detector plus
+image-space structural estimation over temporary RGB samples and returns only
 relative 2D geometry. A native iPhone or iPad RoomPlan scan is the only source
 that can qualify for 3D, and only after provenance, LiDAR capability, coordinate
 frame, units, and geometry validation. The API must keep a missing or failed

@@ -83,6 +83,11 @@ frontend uses `4175` by default. Set `VITE_DEMO_MODE=false` and
 
 An authenticated admin/caregiver starts `/api/v1/homes/{home_id}/pairing/start`; complete its code once at `/api/v1/pairing/complete`. Publisher accounts can publish media but cannot manage home metadata or family settings.
 
+The native iOS app does not currently act as the continuous camera publisher.
+Use the ONE `/join` page in Safari on the camera phone, then complete consent,
+preview, the guided room sweep, and fixed placement. Follow [Add a phone as a
+camera](/guide/camera-setup) for the exact two-device flow.
+
 ## What “working” means here
 
 Health `ok`, a loaded dashboard, and navigable routes prove a local demo only—not camera hardware, LiveKit subscriber connectivity, external model availability, or production database readiness.

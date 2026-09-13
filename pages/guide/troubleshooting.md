@@ -25,9 +25,11 @@ summary model for room geometry.
 
 The backend exposes persistent map-generation jobs and the Compose stack points
 them at `ONE_GEOMETRY_SERVICE_URL` on the host bridge. Start the host-side
-service in model mode with an explicit checkpoint/configuration and verify its
-`/health` response is ready. `ONE_GEOMETRY_MODE=mock` is only for contract
-tests; it is not a production fallback.
+service in `model` mode with the real checkpoint and checked-in configuration,
+then verify that `/health` reports `status: "ready"`, `mode: "model"`,
+`runtime.framework: "pytorch-ultralytics"`, and an actual model version. If
+the checkpoint or accelerator is missing, fix that dependency; do not replace
+it with synthetic geometry.
 
 ## The iPhone cannot start the camera sweep
 

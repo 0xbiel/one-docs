@@ -27,11 +27,12 @@ Pausing care stops the relevant capture path in the client and revokes the backe
 
 ## Camera-derived 2D map
 
-The sweep is an RGB-only input to the local room-layout service. It produces a
-relative camera-room-2d map: polygons, wall segments, a relative camera pose,
-confidence, and model metadata. It does not produce a metric floor plan and it
-does not become a 3D model. Raw sample frames are temporary processing input;
-only the derived map revision and job metadata are retained.
+The sweep is an RGB-only input to the real local YOLOv8-World v2 room-layout
+service. It produces a relative camera-room-2d map: polygons, wall segments,
+detected furniture, detected doors/windows, a relative camera pose, confidence,
+and model metadata. It does not produce a metric floor plan and it does not
+become a 3D model. Raw sample frames are temporary processing input; only the
+derived map revision and job metadata are retained.
 
 The caregiver does not tap left, center, or right anchors. If the worker cannot
 reach the configured confidence threshold, the job ends as `needs_rescan` and

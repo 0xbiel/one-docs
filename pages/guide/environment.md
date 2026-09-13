@@ -27,6 +27,11 @@ ONE_LM_STUDIO_API_KEY=
 ONE_GEOMETRY_SERVICE_URL=http://host.docker.internal:8090
 ONE_GEOMETRY_TIMEOUT_SECONDS=45
 ONE_GEOMETRY_REQUIRE_GPU=true
+ONE_GEOMETRY_MODE=model
+ONE_GEOMETRY_MODEL_PATH=/absolute/path/to/yolov8s-worldv2.pt
+ONE_GEOMETRY_MODEL_CONFIG=/absolute/path/to/one/geometry_service/model_config.yolo-world.json
+ONE_GEOMETRY_DEVICE=auto
+ONE_GEOMETRY_ALLOW_CPU=false
 # Keep inference off for the deterministic MVP until it is explicitly enabled.
 ONE_LLM_ENABLED=false
 ONE_CORS_ORIGINS=http://localhost:5173,http://localhost:4175,http://127.0.0.1:5173,http://127.0.0.1:4175
@@ -67,7 +72,9 @@ keeps API calls same-origin. For iOS, `RuntimeConfiguration` reads the
 Tailscale Serve deployment uses the HTTPS host plus `/api/v1`; never hard-code
 a personal tailnet hostname in a committed project file.
 
-The geometry service runs separately on the Mac host. Model mode requires
-`ONE_GEOMETRY_MODEL_PATH`, `ONE_GEOMETRY_MODEL_CONFIG`, and a working PyTorch
-MPS runtime; there is no bundled checkpoint. Use `ONE_GEOMETRY_MODE=mock` only
-for an explicit local contract test.
+The geometry service runs separately on the Mac host. The live path requires
+the real YOLOv8-World v2 checkpoint, `ONE_GEOMETRY_MODEL_PATH`, the checked-in
+`ONE_GEOMETRY_MODEL_CONFIG`, Ultralytics/OpenCV dependencies, and a working
+PyTorch MPS runtime. The checkpoint is kept outside Git. The only supported
+service mode is `ONE_GEOMETRY_MODE=model`; a missing model must remain
+unavailable rather than becoming synthetic geometry.

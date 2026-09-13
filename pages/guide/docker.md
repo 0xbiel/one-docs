@@ -56,10 +56,10 @@ Compose configures the API to call
 `http://host.docker.internal:8090` by default through
 `ONE_GEOMETRY_SERVICE_URL`, with a 45-second timeout and GPU required. Start
 the host-side service separately from `one/geometry_service/`; model mode needs
-an explicit TorchScript checkpoint/configuration and a working MPS runtime. If
-the service is not ready, map jobs report `unavailable` and keep the previous
-map active. `ONE_GEOMETRY_MODE=mock` is for local contract tests only and must
-not be used as production inference. See
+the real YOLOv8-World v2 checkpoint, the checked-in model configuration,
+Ultralytics/OpenCV dependencies, and a working MPS runtime. If the service is
+not ready, map jobs report `unavailable` and keep the previous map active; the
+API never turns that state into synthetic geometry. See
 [Camera mapping](/architecture/camera-mapping) for the worker's contract.
 
 ## Tailscale Serve
