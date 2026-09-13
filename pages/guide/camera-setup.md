@@ -25,9 +25,8 @@ publisher pairing and person sign-in are different credentials.
    private Tailscale URL is the recommended physical-phone setup.
 3. Sign in as the household caregiver or admin and make sure **Room and camera
    data** (`video_capture`) is allowed and care is not paused.
-4. Keep the future camera phone powered and connected to the same private
-   network. For automatic LiDAR placement, use that same physical iPhone for
-   the native RoomPlan scan before returning it to its fixed camera position.
+4. Keep the fixed camera device powered and connected to the same private
+   network. The fixed camera and the LiDAR scanner may be different devices.
 
 `localhost` on an iPhone refers to the iPhone, not the Mac running ONE. Camera
 permissions also require a secure origin on a physical phone, so use the
@@ -74,50 +73,57 @@ Back on the caregiver device:
 ## Add the LiDAR room scan
 
 Use a LiDAR-capable iPhone or iPad signed into the household in the native ONE
-app. Automatic camera placement is available only when the scanning device is
-the same physical iPhone as the paired camera. The continuous publisher still
-runs separately in Safari.
+app. The recommended Mac-camera setup is to keep the Mac fixed and publishing
+while the iPhone is used only as the RoomPlan scanner.
 
 1. Open **Map** in the native ONE app.
-2. Select **Update room scan**. If the household has exactly one active paired
-   camera, ONE selects it automatically. With multiple cameras, choose the one
-   that is this same physical iPhone; otherwise leave **Map only** selected.
+2. Select **Update room scan** and leave **Map only** selected when the iPhone
+   is only the LiDAR scanner. ONE never auto-selects the household's only
+   camera for direct registration.
 3. Select **Start LiDAR scan**.
 4. Walk slowly around the room so RoomPlan captures the walls, floor,
    openings, and visible furniture.
-5. Before finishing, hold the iPhone still in the exact position and
-   orientation where the camera will remain. Once tracking is stable, tap
-   **Done scanning**. That stops the RoomPlan session and captures the final AR
-   camera pose used for registration.
-6. Wait for ONE to save the metric scene, camera registration, and 3D asset.
-   A camera-positioning failure does not discard the 3D room map.
-7. Confirm **Native RoomPlan · metric 3D** and **Camera positioned**. If the app
-   says **Camera needs another setup scan**, repeat with slower movement and a
-   stable final pose.
+5. Tap **Done scanning** when the room is covered. ONE saves the metric scene,
+   3D asset, and private visual landmarks used to locate a separate fixed
+   camera later.
+6. On the fixed Mac camera page, keep the camera still and select **Position
+   this camera in 3D**. ONE captures a short burst from that fixed view and
+   matches it against the RoomPlan landmark index to estimate the Mac camera's
+   3D pose.
+7. Confirm the camera reports **Positioned in the RoomPlan 3D map**. If the
+   match cannot be confirmed, improve overlap/lighting or refresh the LiDAR
+   scan and try again without moving the Mac camera.
 
 The LiDAR scan may be completed before or after camera pairing. It belongs to
 the household, not to the camera credential.
 
 ## Camera position and the LiDAR model
 
-The native app now records the AR camera transform from the same RoomPlan
-session and registers the selected paired camera in `roomplan-local`. The
-backend accepts only the current native 3D map, an enabled camera, and a finite
-4×4 `camera_to_world` transform. Limited/unavailable tracking produces
-`needs_rescan`; ONE never fabricates a metric pose.
+There are two truthful camera-registration paths. For a separate Mac/browser
+camera, the native app uploads the RoomPlan map plus visual landmarks, then the
+fixed browser camera supplies its own frames to the RoomPlan localization
+endpoint. Feature matching plus PnP/RANSAC estimates that camera's pose in the
+metric RoomPlan coordinate frame.
 
-This is intentionally separate from the Safari sweep. Browser camera geometry
-remains camera-relative 2D evidence and is never relabeled as RoomPlan/world
-geometry. Automatic placement is valid only when the selected paired camera is
-the same physical iPhone performing the LiDAR scan and the scan ends at that
-camera's final fixed pose.
+If the scanning iPhone is itself the exact paired camera that will remain
+fixed, you may explicitly select that camera instead of **Map only**. In that
+same-device case, ONE records the final AR camera transform from the RoomPlan
+session and registers it directly in `roomplan-local`. Do not select a Mac or
+other separate browser camera here, because the iPhone's final AR pose is not
+that camera's pose.
+
+The optional Safari walkthrough remains camera-relative 2D evidence and is
+never relabeled as RoomPlan/world geometry. It is not required for the
+Mac-camera + iPhone-LiDAR flow.
 
 ## What the room walkthrough creates
 
-The Safari walkthrough creates an approximate, camera-relative **2D** map and does
-not claim measured scale. The native RoomPlan scan creates the metric **3D**
-map and, when the same paired iPhone is selected, its camera-to-world
-registration. The two pose sources remain separate in the API.
+The Safari walkthrough creates an approximate, camera-relative **2D** map and
+does not claim measured scale. The native RoomPlan scan creates the metric
+**3D** map. A separate fixed camera is localized from its own still frames;
+only an explicitly selected same-device iPhone uses the scan's final
+camera-to-world transform directly. These pose sources remain separate in the
+API.
 
 ## If it does not connect
 
