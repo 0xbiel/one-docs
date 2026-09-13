@@ -31,7 +31,12 @@ then verify that `/health` reports `status: "ready"`, `mode: "model"`,
 the checkpoint or accelerator is missing, fix that dependency; do not replace
 it with synthetic geometry.
 
-## The iPhone cannot start the camera sweep
+Mapping failure does not invalidate pairing. The camera remains saved and can
+continue live publishing and object vision. Use **Continue without map** or
+retry the walkthrough after the worker health check is ready. Jobs interrupted
+by an API restart become retryable failures; they do not remain at 10% or 72%.
+
+## The iPhone cannot start the room walkthrough
 
 Use the HTTPS website origin reported by Tailscale. A phone opening
 127.0.0.1 or localhost reaches the phone itself, not the Mac. In Safari,

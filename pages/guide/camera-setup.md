@@ -5,7 +5,11 @@ ONE uses two roles during camera setup:
 - The **caregiver web dashboard or native iOS app** creates and monitors the
   device pairing against the same authenticated backend state.
 - The **camera device** opens ONE in Safari, accepts the one-time code, grants
-  consent, completes the room sweep, and publishes the camera.
+  consent, previews the rear camera, and optionally records a room walkthrough.
+
+Pairing and room mapping are separate. ONE saves the camera to the household as
+soon as the one-time code is accepted. Reloading the camera page, skipping the
+walkthrough, or receiving a low-confidence mapping result does not remove it.
 
 The native iOS app is a caregiver/resident client, can create and monitor a
 publisher pairing code from **Home → Cameras**, and produces LiDAR RoomPlan
@@ -47,15 +51,20 @@ On the iPhone that will become the camera:
 2. Enter the six-digit camera pairing code and select **Connect this camera**.
 3. Read and accept the camera consent choice. Safari asks for system camera and
    microphone permission only after this step.
-4. Select **Start camera**, confirm that the preview is live, and complete the
-   guided 8–12 second room sweep.
-5. Put the phone in its fixed position and select **Camera is in its fixed
-   spot**. Keep this page open while the phone is publishing.
+4. Select **Start consented preview** and confirm that the rear-camera view is
+   live. Live publishing and local object vision can work without a room map.
+5. When convenient, select **Record room walkthrough** and walk naturally for
+   about 14 seconds. Include corners, floor-wall boundaries, doors, and large
+   furniture. Normal hand movement is expected.
+6. If mapping is not useful right now, select **Use camera without map**. A
+   failed or low-confidence draft can be retried later without pairing again.
+7. When a room draft is ready, put the phone in its fixed position and select
+   **Camera is in its fixed spot**. Keep this page open while it publishes.
 
 Back on the caregiver device:
 
-1. Wait for the pairing state to change from **Waiting** to **Camera
-   connected**. The native iOS Cameras section also refreshes its real enabled
+1. Wait for the pairing state to change from **Waiting** to **Camera connected
+   and saved**. The native iOS Cameras section also refreshes its real enabled
    camera list and shows the backend-reported online/paused state.
 2. On the web dashboard, optionally refine the camera name and placement, then
    select **Save camera setup**.
@@ -102,9 +111,9 @@ geometry. Automatic placement is valid only when the selected paired camera is
 the same physical iPhone performing the LiDAR scan and the scan ends at that
 camera's final fixed pose.
 
-## What the room sweep creates
+## What the room walkthrough creates
 
-The Safari sweep creates an approximate, camera-relative **2D** map and does
+The Safari walkthrough creates an approximate, camera-relative **2D** map and does
 not claim measured scale. The native RoomPlan scan creates the metric **3D**
 map and, when the same paired iPhone is selected, its camera-to-world
 registration. The two pose sources remain separate in the API.
@@ -119,8 +128,8 @@ registration. The two pose sources remain separate in the API.
   not paused.
 - **Connected but no video:** pairing succeeded, but media publishing did not.
   Leave the publisher page open and check the LiveKit endpoint separately.
-- **Map says needs rescan:** repeat the guided sweep with slower movement,
-  stable lighting, and a clearer view of walls and furniture.
+- **Map needs another pass:** the camera is still paired and usable. Retry the
+  walkthrough later with steady lighting and clearer views of room boundaries.
 
 See [Browser camera pairing](/architecture/browser-camera), [Docker
 setup](/guide/docker), and [Troubleshooting](/guide/troubleshooting) for the

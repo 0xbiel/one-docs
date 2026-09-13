@@ -17,25 +17,28 @@ client must not infer a 3D capability from a camera connection, a rectangle,
 or a successful calibration request. Until those fields are present in the
 running API, the client must treat a missing source or dimension as legacy-2d.
 
-## Guided camera sweep
+## Optional room walkthrough
 
 The camera device stays on the publisher setup page after pairing:
 
 1. The caregiver creates a short-lived device code and keeps the pairing sheet
    open.
-2. The camera device enters the code, records the explicit video_capture
-   consent, and requests camera and microphone access from a secure origin.
-3. After the preview is stable, the device performs an 8–12 second guided
-   room sweep. The guide asks the user to move slowly enough to expose the
-   room boundary, then place the camera in its fixed position.
-4. The device submits bounded RGB samples for that camera. The caregiver page
+2. The camera device enters the code. The backend creates the camera record at
+   this point, independently of any later mapping result.
+3. The device records explicit video_capture consent and requests camera and
+   microphone access from a secure origin. Preview, LiveKit publishing, and
+   object vision do not wait for a map.
+4. If room context is wanted, the user explicitly records a roughly 14-second,
+   20-frame walkthrough. Natural motion is allowed; the guide asks for corners,
+   floor-wall boundaries, doors, and large furniture.
+5. The device submits bounded RGB samples for that camera. The caregiver page
    polls the generation resource and remains on the same setup sheet.
-5. The local room-layout worker runs the configured real model on the sweep,
+6. The local room-layout worker runs the configured real model on the walkthrough,
    derives relative polygons and walls from visible structure, and returns
    detected furniture, doors, windows, camera pose, confidence, and model
    version. Raw frame bytes are discarded after the job finishes.
-6. A ready result becomes the current 2D map. There are no three-anchor buttons
-   and no navigation to a separate manual calibration page.
+7. A ready result becomes the current 2D map. A low-confidence or failed result
+   leaves the camera saved and offers retry or continue-without-map actions.
 
 The result is a spatial aid for reviewable observations, not a survey. RGB
 alone does not provide a reliable world scale, so the 2D contract never
@@ -45,8 +48,8 @@ reports a fabricated error in meters.
 
 | Status | Meaning | Persistence behavior |
 | --- | --- | --- |
-| collecting | The paired camera is submitting samples and the worker is waiting for enough coverage | No map is replaced |
-| processing | The local worker is analyzing the bounded sample set | No raw frame is written to the database or object store |
+| collecting | The paired camera has opened a bounded walkthrough job and is preparing its samples | No map is replaced; jobs older than 15 minutes expire so a fresh capture can start |
+| processing | The local worker is analyzing the bounded sample set | No raw frame is written to the database or object store; an API restart marks the interrupted job failed and retryable |
 | ready | Geometry passed the configured confidence threshold and a map revision was saved | Derived geometry and metadata are retained as a map revision |
 | needs_rescan | Coverage, motion, visibility, or confidence was insufficient | The old map remains; the failed sample set is discarded |
 | unavailable | The local GPU worker cannot be reached or cannot run the selected model | No new map is saved; the UI explains how to restore the worker |
