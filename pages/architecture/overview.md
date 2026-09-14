@@ -37,11 +37,13 @@ that can qualify for 3D, and only after provenance, LiDAR capability, coordinate
 frame, units, and geometry validation. The API must keep a missing or failed
 worker result from replacing the previous map.
 
-The backend checkout includes the host-side room-layout service seam, the
-persistent camera map-generation job, and a strict 3D gate. The native iOS
-RoomPlan producer still needs to serialize and upload its captured result; until
-that work lands, only camera-derived relative 2D maps can be created. The map
-boundary is documented in [Camera mapping](/architecture/camera-mapping).
+The backend checkout includes the host-side room-layout service, persistent
+camera map-generation jobs, strict RoomPlan 3D validation, fixed-camera
+localization, and the scene read model. The native iOS producer captures,
+normalizes, and uploads RoomPlan geometry and can attach the exported USDZ.
+The map boundary is documented in [Camera mapping](/architecture/camera-mapping)
+and the complete data flow in
+[Spatial models, maps & detection](/api/spatial-vision).
 
 ## Request boundaries
 

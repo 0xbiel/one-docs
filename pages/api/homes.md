@@ -2,6 +2,11 @@
 
 All operations in this page require a bearer session and a membership in `{home_id}`. Publisher memberships are blocked from home-control endpoints. IDs are opaque strings from the API; examples use `home_demo` only as a placeholder.
 
+For the reasoning behind `camera-cv-2d` versus `roomplan-lidar-3d`, current-map
+selection, RoomPlan camera registration, visual landmarks, and the client 2D/3D
+rendering gate, read [Spatial models, maps & detection](/api/spatial-vision).
+This page is the exact route reference for those concepts.
+
 ## Identity and runtime
 
 ### `GET /api/v1/me`

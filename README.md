@@ -32,8 +32,10 @@ produce relative 2D geometry after a guided sweep, while a 3D model requires a
 validated native iPhone or iPad LiDAR RoomPlan artifact. See
 [Camera mapping](pages/architecture/camera-mapping.md) and the
 [real geometry model](pages/architecture/real-geometry-model.md) for the
-behavioral job states, privacy boundary, real local detector, exact current
-backend map routes, and the remaining native iOS RoomPlan producer work.
+behavioral job states, privacy boundary, and local model runtime. The
+[spatial models, maps & detection](pages/api/spatial-vision.md) page explains
+the complete contributor-facing flow from RGB/LiDAR input through 2D/3D map
+artifacts, camera localization, live object projection, and client rendering.
 
 ## Content boundary
 

@@ -4,6 +4,13 @@ The FastAPI application publishes generated OpenAPI at `/api/v1/openapi.json` an
 
 This section is an implementation reference, not a product promise. Route names, operation IDs, request constraints, and response status codes below were checked against the committed contract and the current FastAPI handlers. The contract is authoritative when a client and a prose page disagree.
 
+If you are working on mapping or vision, read
+[Spatial models, maps & detection](/api/spatial-vision) before the route pages.
+It explains how the browser 2D model, native RoomPlan 3D model, camera
+registration, YOLO detection, temporal stability, spatial projection, map
+revision selection, and persistence boundaries fit together. The pages below
+then provide the exact calls and schemas.
+
 ## Endpoint inventory
 
 | Area | Routes | Auth / gate |
@@ -44,7 +51,7 @@ flowchart LR
 
 Pairing completion creates the bearer session; the API rejects vision and media operations when the required consent is missing or paused.
 
-The connected camera performs an 8–12 second sweep, the local worker processes
+The connected camera performs a short guided sweep, the local worker processes
 temporary RGB samples, and the caregiver sheet observes `collecting`,
 `processing`, `ready`, `needs_rescan`, `unavailable`, or `failed`. A ready
 result persists derived 2D geometry only. The map-generation routes and their

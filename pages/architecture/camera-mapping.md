@@ -4,6 +4,11 @@ ONE treats map geometry as evidence with explicit provenance. A browser camera
 can produce an approximate 2D room view, but it can never qualify as a 3D
 RoomPlan model.
 
+This page focuses on map provenance, job states, and route behavior. For a
+contributor-level explanation of the algorithms and how mapping connects to
+live detection, RoomPlan localization, scene selection, and frontend rendering,
+see [Spatial models, maps & detection](/api/spatial-vision).
+
 ## Two map sources
 
 | Source | Dimension | Producer | Stored geometry | Scale | Dashboard |

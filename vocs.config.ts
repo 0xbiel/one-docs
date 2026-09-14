@@ -52,7 +52,8 @@ export default defineConfig({
       { text: 'Clients', items: [{ text: 'Web app', link: '/architecture/web' }, { text: 'Camera mapping', link: '/architecture/camera-mapping' }, { text: 'Real geometry model', link: '/architecture/real-geometry-model' }, { text: 'iOS & RoomPlan', link: '/architecture/ios' }, { text: 'Browser camera pairing', link: '/architecture/browser-camera' }] },
     ],
     '/api/': [
-      { text: 'Contract', items: [{ text: 'API overview', link: '/api/overview' }, { text: 'Auth, pairing & sessions', link: '/api/auth-sessions' }, { text: 'Schemas & errors', link: '/api/schemas' }, { text: 'Request examples', link: '/api/examples' }] },
+      { text: 'Understand the API', items: [{ text: 'API overview', link: '/api/overview' }, { text: 'Spatial models, maps & detection', link: '/api/spatial-vision' }] },
+      { text: 'Contract', items: [{ text: 'Auth, pairing & sessions', link: '/api/auth-sessions' }, { text: 'Schemas & errors', link: '/api/schemas' }, { text: 'Request examples', link: '/api/examples' }] },
       { text: 'Resources', items: [{ text: 'Homes, rooms & calibration', link: '/api/homes' }, { text: 'Consent & privacy', link: '/api/privacy' }, { text: 'Objects, vision & events', link: '/api/observations' }, { text: 'Clips & LiveKit', link: '/api/media' }] },
       { text: 'Family', items: [{ text: 'Check-ins & summaries', link: '/api/checkins' }, { text: 'Members, invites & assistant', link: '/api/family' }, { text: 'Medication plans & reminders', link: '/api/medication' }] },
       { text: 'Operations', items: [{ text: 'Retention & webhooks', link: '/api/operations' }] },

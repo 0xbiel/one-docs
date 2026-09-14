@@ -2,6 +2,11 @@
 
 For exact operation IDs and schema constraints, see [Objects, vision & events](/api/observations) and [Check-ins & summaries](/api/checkins).
 
+For the end-to-end relationship between YOLO detection, the three-hit temporal
+stability window, 2D camera maps, RoomPlan camera registration, metric
+projection, and persisted observations, see
+[Spatial models, maps & detection](/api/spatial-vision).
+
 ## Frame contract
 
 `POST /api/v1/homes/{home_id}/vision/frames` accepts a camera ID, base64 frame bytes (maximum 3 MB after decode), width/height, zero to 20 candidate labels, optional capture timestamp, and optional positive depth in meters. With no labels, the backend uses enabled household-object labels and then a bounded household-item default vocabulary. Labels for face, identity, emotion, medical symptom, and diagnosis inference are rejected.
