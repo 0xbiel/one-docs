@@ -20,6 +20,23 @@ producer. See [Add a phone as a camera](/guide/camera-setup).
 
 `RuntimeConfiguration` reads `ONE_API_BASE_URL` from the generated Info.plist. Any configured URL, including the default `http://127.0.0.1:8000/api/v1`, is live; demo data is reserved for previews and tests that omit the value. For a tailnet deployment, set the build setting to the Tailscale HTTPS URL plus `/api/v1`; keep certificates and tokens out of source control. Session material belongs in the Keychain abstraction, and local artifacts can use the AES-GCM helper.
 
+## Care-space management parity
+
+Home and Account both expose the same active care-space entry. Opening it shows
+the account's homes and residences, while creation stays in a focused native
+sheet. After a successful switch or creation, iOS persists the replacement
+session, clears data scoped to the previous care space, rebuilds the
+authenticated client, returns to Home, and refreshes the new context. A failed
+switch keeps the previous session and cached home usable; a failed membership
+list remains a retryable inline state rather than signing the person out.
+
+Onboarding completion is keyed by both home ID and user ID. A newly created
+care space therefore enters its own privacy onboarding, while switching back to
+a space already completed by that user does not repeat it. The Family surface
+also manages the people receiving care for the active space independently from
+the people who have ONE access, so a household can contain a couple and a
+residence can contain several care recipients without creating login accounts.
+
 ## Native project layout
 
 The native target follows the same feature-oriented shape as PocketDetour so a screen can be found without searching a monolithic view file:
@@ -38,8 +55,10 @@ The folders are organizational boundaries, not separate modules: the existing Xc
 
 `RoomPlanCaptureView` wraps `RoomCaptureView` and delegates completion to
 `RoomBuilder`. `RoomPlanCapability.isSupported` returns false on Simulator and
-otherwise checks `RoomCaptureSession.isSupported`. A physical LiDAR-capable
-iPhone or iPad is required for a real 3D source.
+otherwise checks `RoomCaptureSession.isSupported`. LiDAR-capable hardware uses
+this higher-accuracy RoomPlan path. Non-LiDAR iPhones can instead use the guided
+ARKit video capture described below to create an explicitly approximate metric
+3D room model.
 
 The native scan is the only producer that can qualify for the
 roomplan-lidar-3d contract. A valid upload must preserve RoomPlan provenance,
@@ -52,10 +71,11 @@ Room maps should be treated as approximate spatial memory, not a survey-grade
 map. A scan that lacks the strict provenance and geometry fields is retained as
 local/demo data and must not unlock the web 3D view.
 
-The native producer is wired end to end. `RoomPlanCapability.isSupported`
-requires RoomPlan support and mesh scene reconstruction; Simulator and
-non-LiDAR devices remain on the explicit 2D/legacy state. A real 3D source
-still requires a physical LiDAR-capable iPhone or iPad.
+The native producers are wired end to end. `RoomPlanCapability.isSupported`
+requires RoomPlan support and mesh scene reconstruction. Devices without LiDAR
+must never claim `roomplan-lidar-3d`; they use the separate
+`arkit-video-3d` provenance when guided ARKit capture is available. Simulator
+remains unsupported for real sensor acceptance.
 
 ## Native LiDAR implementation
 
@@ -94,6 +114,26 @@ physical LiDAR device is still required for acceptance of the sensor capture,
 RoomBuilder conversion, both authenticated uploads, scene reload, and USDZ
 rendering; simulator tests cannot prove that hardware path.
 
+## Non-LiDAR guided ARKit video capture
+
+On iPhones that cannot run RoomPlan, ONE can guide the user through a room
+video scan using ARKit tracking and detected planes. The app records bounded
+metric surfaces in the ARKit world frame and uploads them through
+`POST /api/v1/homes/{home_id}/maps/arkit-video`.
+
+The resulting revision is always explicit about its weaker provenance:
+`source=arkit-video-3d`, `coordinate_frame=arkit-world`, and
+`approximate=true`. The backend derives a structural room model from those
+surfaces and generates the USDZ used by the iOS and web 3D viewers. The same
+revision can also drive the web top-down 2D view, so both clients use the same
+room shape instead of inventing independent geometry.
+
+This fallback is approximate metric context, not RoomPlan accuracy. A valid
+`roomplan-lidar-3d` revision remains preferred and must not be silently
+replaced or downgraded by a later ARKit-video scan. Fixed-camera registration,
+camera frustums, and RoomPlan landmark localization remain RoomPlan-only in the
+current implementation.
+
 ## Native privacy surface
 
 The Account/Settings view exposes purpose-level consent, pause/resume controls, export, deletion requests, and session logout. The Family view lets an authorized person edit a non-owner member's live role or swipe to reveal a destructive access-removal action; confirmation is required, self/owner changes are blocked, and the backend revokes removed sessions. `PrivacyInfo.xcprivacy` is part of the target. Native demo behavior and backend-backed behavior are separate validation steps.
@@ -110,8 +150,9 @@ chosen form and then the email-code confirmation state. Onboarding keeps one
 purpose per page with a compact progress header, explicit Allow/Not now
 choices, page indicators, and a clear Continue/Finish action.
 
-The project targets iOS 26.0 and RoomPlan must be validated on a physical
-LiDAR-capable device. Simulator, non-LiDAR devices, and Safari use the
-camera-derived 2D path or a clearly marked legacy-zone state; none of them
-unlock a 3D model. See [Camera mapping](/architecture/camera-mapping) for the
-source and dimension boundary.
+The project targets iOS 26.0. RoomPlan must be validated on a physical
+LiDAR-capable device, while the `arkit-video-3d` fallback needs acceptance on a
+physical non-LiDAR iPhone. Safari still uses the browser camera-derived 2D path
+and cannot create either native 3D provenance. See
+[Camera mapping](/architecture/camera-mapping) for the source and dimension
+boundary.

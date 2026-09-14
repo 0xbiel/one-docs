@@ -6,13 +6,14 @@ companion to the endpoint reference: start here when changing the mapping or
 vision stack, then use [Homes, rooms & calibration](/api/homes) and
 [Objects, vision & events](/api/observations) for the exact HTTP contract.
 
-The most important rule is that ONE has **three different spatial pipelines**.
+The most important rule is that ONE has **four different spatial pipelines**.
 They share storage and scene APIs, but they are not interchangeable:
 
 | Pipeline | Input | Main processing | Output | Coordinate truth |
 | --- | --- | --- | --- | --- |
 | Browser camera room sweep | 3–20 temporary RGB frames | Local YOLO-World + OpenCV structure estimation | `camera-cv-2d` map | Relative/image-space 2D |
 | Native RoomPlan scan | LiDAR + RGB + ARKit through iOS RoomPlan | Apple RoomPlan + ONE normalization/validation | `roomplan-lidar-3d` map | Metric `roomplan-local` 3D |
+| Native ARKit video scan | ARKit tracking + detected planes on a non-LiDAR iPhone | ONE structural reconstruction + USDZ generation | `arkit-video-3d` map | Approximate metric `arkit-world` 3D |
 | Live object detection | Individual camera frames | Local YOLO-World + temporal tracker + optional RoomPlan projection | detections, observations, events | Zone fallback or registered RoomPlan 3D |
 
 A successful detection does not create a room map. A successful 2D sweep does
@@ -42,9 +43,15 @@ flowchart TD
     normalize --> map3d[roomplan-lidar-3d\nmetric 3D map revision]
     normalize --> usdz[Optional USDZ\nrendering attachment]
 
+    arkitVideo[Native non-LiDAR ARKit video\ntracked planes] --> arkitReconstruct[Approximate structural reconstruction]
+    arkitReconstruct --> arkit3d[arkit-video-3d\napproximate metric revision]
+    arkitReconstruct --> arkitUsdz[Generated USDZ\nrendering attachment]
+
     map2d --> scene[GET scene\nclient rendering contract]
     map3d --> scene
+    arkit3d --> scene
     usdz --> render[Web/iOS native model rendering]
+    arkitUsdz --> render
 
     scanSamples[RoomPlan visual samples\nRGB + depth + ARKit pose] --> landmarks[ORB landmark index]
     landmarks --> localization[ORB matching + PnP/RANSAC]
@@ -68,6 +75,7 @@ actual responsibilities:
 | YOLOv8-World v2 | Host-side geometry service through PyTorch/MPS | Detect furniture, doors/windows, structural labels, and live household-object candidates | Metric room geometry from RGB alone |
 | OpenCV Canny + Hough line processing | Host-side geometry service | Estimate visible room boundaries from a browser sweep | LiDAR precision or survey-grade walls |
 | Apple RoomPlan + ARKit | Native iOS on supported LiDAR hardware | Capture metric walls, floors, openings, objects, transforms, dimensions, and camera poses | A browser-generated or simulated 3D room |
+| ARKit guided video capture | Native iOS on non-LiDAR hardware | Capture tracked metric planes/surfaces for an approximate room reconstruction | RoomPlan provenance, LiDAR precision, or fixed-camera registration |
 | OpenCV ORB + triangulation/depth | Host-side geometry service | Build visual landmarks tied to RoomPlan coordinates | Persistent raw scan imagery |
 | OpenCV `solvePnPRansac` | Host-side geometry service | Recover a fixed camera pose from 2D image features ↔ 3D RoomPlan landmarks | A pose when match quality is weak |
 | LM Studio / Qwen | Backend integration, downstream of collected context | Check-in/caregiver summaries | Mapping, detection, authorization, or spatial truth |
@@ -244,8 +252,11 @@ or low confidence becomes `needs_rescan` and does not expose a usable pose.
 A browser/webcam does not share the RoomPlan ARKit session, so ONE builds a
 visual bridge:
 
-1. During the native scan, iOS samples bounded RGB frames, camera intrinsics,
-   ARKit `camera_to_world`, and LiDAR depth when available.
+1. During the native scan, iOS samples bounded RGB frames on a periodic timer
+   (up to 10 samples), camera intrinsics, ARKit `camera_to_world`, and LiDAR
+   depth when available. Sampling does not depend only on RoomPlan geometry
+   update callbacks, so a valid scan still carries enough visual frames for
+   separate-camera localization.
 2. The geometry worker finds ORB keypoints/descriptors.
 3. When depth exists, each usable feature is back-projected into a metric 3D
    RoomPlan point.
@@ -293,7 +304,9 @@ frame at a time and does not alter room geometry.
 ### Candidate labels and privacy boundary
 
 The backend selects a bounded set of object labels from the request, enabled
-household objects, or its household-item default vocabulary. Labels asking for
+household objects, or its household-item default vocabulary. Publisher frames
+that do not request explicit labels always include `person` so ordinary human
+presence can be located without doing identity recognition. Labels asking for
 face, identity, emotion, medical symptom, or diagnosis inference are rejected.
 
 The decoded frame is limited to 3 MB. The API passes it to the local real
@@ -303,7 +316,7 @@ YOLO-World detector. Raw bytes are not stored by the endpoint.
 
 A single bounding box is not immediately treated as a household observation.
 Each camera has an in-memory tracker. Detections are matched by label and
-bounding-box IoU. The current defaults require three hits inside a two-second
+bounding-box IoU. The current defaults require three hits inside a four-second
 window with IoU ≥ `0.2` before the detection becomes stable enough to continue
 through the pipeline.
 
@@ -329,6 +342,20 @@ image zone instead of fabricating XYZ coordinates.
 When a metric point exists, the backend compares its X/Z location with the
 RoomPlan `room_zones` polygons and can annotate the projection with the matching
 room label.
+
+### Camera and person overlays on the RoomPlan map
+
+The web map uses the same `roomplan-local` frame for registered cameras and
+metric observations. A positioned fixed camera is rendered with its pose and
+view frustum in both the 3D RoomPlan scene and the top-down RoomPlan view.
+Derived observations expose their metric `worldPoint` plus `mapId`, allowing
+the frontend to render only points that belong to the active map revision.
+
+`person` is treated as transient presence on the map rather than a durable
+identity. Its marker is visible for 12 seconds after the latest stable
+detection and then hides unless another frame refreshes it. Other object
+observations remain last-seen evidence. No face recognition or person identity
+is inferred by this overlay.
 
 ### What gets persisted
 
@@ -414,4 +441,3 @@ The conceptual flows above are exposed through these route groups:
   [Camera mapping](/architecture/camera-mapping);
 - native capture details:
   [iOS & RoomPlan](/architecture/ios).
-

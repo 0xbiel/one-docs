@@ -28,8 +28,10 @@ The site uses Vocs 2.9, TypeScript configuration, and `style.css` for the ONE sh
 ## Mapping documentation
 
 The map contract is intentionally split by provenance: a browser camera can
-produce relative 2D geometry after a guided sweep, while a 3D model requires a
-validated native iPhone or iPad LiDAR RoomPlan artifact. See
+produce relative 2D geometry after a guided sweep, LiDAR-capable iOS devices
+produce the preferred `roomplan-lidar-3d` model, and non-LiDAR iPhones can
+produce an explicitly approximate `arkit-video-3d` model from a guided ARKit
+video scan. See
 [Camera mapping](pages/architecture/camera-mapping.md) and the
 [real geometry model](pages/architecture/real-geometry-model.md) for the
 behavioral job states, privacy boundary, and local model runtime. The
