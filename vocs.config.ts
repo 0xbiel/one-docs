@@ -49,7 +49,7 @@ export default defineConfig({
     ],
     '/architecture/': [
       { text: 'System', items: [{ text: 'Overview', link: '/architecture/overview' }, { text: 'Repository map', link: '/architecture/repos' }, { text: 'Family mode', link: '/architecture/family' }, { text: 'Object memory & calibration', link: '/architecture/memory' }] },
-      { text: 'Clients', items: [{ text: 'Web app', link: '/architecture/web' }, { text: 'Camera mapping', link: '/architecture/camera-mapping' }, { text: 'Real geometry model', link: '/architecture/real-geometry-model' }, { text: 'iOS & RoomPlan', link: '/architecture/ios' }, { text: 'Browser camera pairing', link: '/architecture/browser-camera' }] },
+      { text: 'Clients', items: [{ text: 'Web app', link: '/architecture/web' }, { text: 'Camera mapping', link: '/architecture/camera-mapping' }, { text: 'LiDAR & mapping visual guide', link: '/architecture/lidar-mapping-visual-guide' }, { text: 'Real geometry model', link: '/architecture/real-geometry-model' }, { text: 'iOS & RoomPlan', link: '/architecture/ios' }, { text: 'Browser camera pairing', link: '/architecture/browser-camera' }] },
     ],
     '/api/': [
       { text: 'Understand the API', items: [{ text: 'API overview', link: '/api/overview' }, { text: 'Spatial models, maps & detection', link: '/api/spatial-vision' }] },

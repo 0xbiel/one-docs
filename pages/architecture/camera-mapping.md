@@ -9,6 +9,10 @@ contributor-level explanation of the algorithms and how mapping connects to
 live detection, RoomPlan localization, scene selection, and frontend rendering,
 see [Spatial models, maps & detection](/api/spatial-vision).
 
+For a diagram-first walkthrough of the same system—from LiDAR capture through
+fixed-camera PnP localization and live object projection—see the
+[LiDAR & mapping visual guide](/architecture/lidar-mapping-visual-guide).
+
 ## Two map sources
 
 | Source | Dimension | Producer | Stored geometry | Scale | Dashboard |
