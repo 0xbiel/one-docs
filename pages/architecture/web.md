@@ -10,7 +10,31 @@ privacy requests, and LiveKit token issuance where implemented. Demo mode
 supplies deterministic scenes, objects, events, device status, pairing, and
 assistant copy only when `VITE_DEMO_MODE=true` is explicitly set.
 
-The UI also maps backend `object_observed` to “Object observed” / “non-diagnostic” language. Family mode presents multiple household caregiver roles, a live member selector when `family_mode` is authorized, subject-scoped reminder reads, assigned responsibility, date-aware recurrence, and acknowledgement status. In live mode, invitations, plan creation/editing, check-ins, and archive actions use the backend; synthetic rows appear only when `VITE_DEMO_MODE=true`. The assistant copy deliberately links answers to evidence and says “Not a diagnosis.”
+The UI also maps backend `object_observed` to “Object observed” / “non-diagnostic” language. Family mode now keeps **People receiving care** separate from **People with access**. Care-recipient profiles come from `/homes/{home_id}/care-recipients` and can be added, edited, selected, and removed without creating a user or membership; this supports multiple residents in a residence and couples in one household. Access rows continue to represent authenticated admins/caregivers/resident accounts. Medication remains on the existing user-subject contract for now, with subject-scoped reminder reads, assigned responsibility, date-aware recurrence, and acknowledgement status. In live mode, care-recipient CRUD, invitations, plan creation/editing, check-ins, and archive actions use the backend; synthetic rows appear only when `VITE_DEMO_MODE=true`. The assistant copy deliberately links answers to evidence and says “Not a diagnosis.”
+
+The sidebar's **Caring for** control manages the active care space separately
+from the care-recipient selector. It lists the authenticated identity's
+households/residences with `GET /api/v1/account/homes`. Choosing another care
+space calls `POST /api/v1/account/homes/{home_id}/activate`, replaces the
+browser bearer/home pair, clears the selected resident, invalidates React Query
+home data, and returns to the dashboard. **Add a care space** creates a new
+home or residence through `POST /api/v1/account/homes`; the current identity is
+its admin and the returned session becomes active immediately. The recipient
+selector reads the independent care-recipient list for the active care space,
+stores the selected care-profile ID separately from medication subject IDs, and
+never changes the session or membership boundary.
+
+On phone and tablet layouts the drawer shares the same rounded top-left
+treatment, and its close control is absolutely positioned in the drawer header
+area so it does not consume a full flex row before the care-space content. The
+**Caring for** summary stops before that close-control hit area, and its
+care-space menu uses compact selectable rows with restrained hover elevation so
+the active-home chooser stays visually contained inside the sidebar. Help,
+account settings, and sign-out now live in a profile menu opened from the header
+avatar instead of using separate header buttons or a duplicate drawer footer.
+The care-recipient chooser is rendered as an application listbox rather than a
+native browser/OS `<select>`, so its open menu keeps the same ONE styling across
+Safari, Chrome, desktop, tablet, and phone layouts.
 
 ## Browser publisher
 

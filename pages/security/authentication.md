@@ -8,11 +8,11 @@ This is the implementation-level reference for the current ONE authentication se
 | --- | --- |
 | Pairing code | Six numeric, single-use secret. Its hash is stored in `pairing_codes`; plaintext is returned once. |
 | Session token | Random bearer value returned after code exchange. Only its hash is stored in `sessions`. |
-| Actor | The user represented by a bearer session, including its membership role for one home. |
+| Actor | The user represented by a bearer session, including its membership role for the one active home bound to that token. The same identity may hold memberships in multiple care spaces. |
 | Publisher | Restricted `publisher` membership for a camera/browser/iOS device. It can publish media but cannot administer a home. |
 | Home | Tenant boundary checked on every protected home route. |
 
-FastAPI's `auth` dependency is authoritative. It requires `Authorization: Bearer <token>`, hashes the presented token, checks expiry, then checks that membership still exists. UI state, route URLs, and LiveKit client state do not grant access.
+FastAPI's `auth` dependency is authoritative. It requires `Authorization: Bearer <token>`, hashes the presented token, checks expiry, then checks that membership still exists for the home recorded on that session. UI state, route URLs, the account's other memberships, and LiveKit client state do not grant access.
 
 ## Bootstrap and pairing
 
@@ -36,6 +36,27 @@ Both codes are exchanged at `POST /api/v1/pairing/complete` with `{ "code": "123
 `expires_in` comes from `ONE_SESSION_TTL_MINUTES` (60 by default); it is not a refresh lifetime. The bootstrap `pairing/start` response includes the requested `role`; the code-exchange response intentionally does not, so clients use authenticated `/api/v1/me` for authoritative role. Invalid, expired, or reused codes return `400`. Do not print codes or tokens in logs, URLs, screenshots, analytics, or support tickets.
 
 Family invitations use `family_invites` and `POST /api/v1/family/invites/accept`; an email-bound invitation must match an existing normalized email identity and then returns a bearer session for that account. The local development outbox still displays the one-time code; it is not a production email delivery provider.
+
+### Multiple care spaces on one identity
+
+An authenticated non-publisher identity can list its care-space memberships at
+`GET /api/v1/account/homes`. Creating another household/residence with `POST
+/api/v1/account/homes` adds the same user as its `admin`; activating an existing
+membership uses `POST /api/v1/account/homes/{home_id}/activate`. Both mutation
+routes return a fresh bearer whose `home_id` is the selected care space.
+
+This is a session switch, not a widening of authorization. The backend checks
+the target membership before issuing the new token, and every protected
+`/homes/{home_id}` request still has to match the home embedded in that bearer.
+The previous token remains valid until it expires or is explicitly logged out,
+so clients must replace their active token/home pair atomically and clear
+home-scoped cached state when switching.
+
+Care recipients are deliberately outside this identity graph. Records under
+`/homes/{home_id}/care-recipients` describe people receiving care and do not
+create a `user`, membership, invitation, bearer session, or authorization role.
+A residence can therefore manage many resident care profiles while granting
+login access only to the staff/family accounts that actually need it.
 
 ## Protected requests and failures
 
@@ -73,6 +94,17 @@ clears all browser session storage in `finally`; the shell also stops publisher
 tracks/connections, clears the React Query cache, and navigates to `/login`.
 Closing the tab clears session storage by browser semantics.
 
+The web sidebar uses the authenticated account-home routes for its **Caring
+for** control. Switching or creating a care space stores the returned token,
+`home_id`, and `user_id`, clears the independent care-recipient selection and
+any medication user-subject override, invalidates
+React Query's home-scoped data, and opens the dashboard for the new care space.
+The nearby care-recipient selector stores `one_care_recipient_id` and changes
+care-profile context inside the active care space; it never changes
+authorization. Existing medication flows keep their separate
+`one_subject_user_id` because those backend contracts still reference user
+subjects.
+
 ### Route-guard and onboarding audit
 
 The current `App.tsx` guards every dashboard route except `/login`, `/create-account`,
@@ -106,7 +138,7 @@ out of scope.
 
 ## Logout, expiry, and revocation
 
-`DELETE /api/v1/sessions/current` requires the current bearer token, deletes its hash from `sessions`, audits `session.logout`, and returns `{ "ok": true }`. Revocation is token-specific: there is no logout-all, refresh, introspection, or session-rotation endpoint.
+`DELETE /api/v1/sessions/current` requires the current bearer token, deletes its hash from `sessions`, audits `session.logout`, and returns `{ "ok": true }`. Revocation is token-specific: there is no logout-all, refresh, or introspection endpoint. Care-space activation issues another one-home session after a membership check; it does not rotate or revoke previous tokens.
 
 On `401` or logout, clients should stop SSE/realtime work, stop publisher tracks, clear token/home/user identifiers, invalidate cached home data, and return to pairing. LiveKit credentials are separate short-lived (600-second) tokens; ONE session deletion does not disconnect an already joined room, so clients must leave/close media explicitly.
 

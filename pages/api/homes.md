@@ -17,9 +17,69 @@ whether runtime processing is paused. The home object also returns
 `careSetting` (`home` or `residence`) and `supportFocus` (`general` or `mci`),
 which clients use to keep live setup language and care context consistent.
 
+### `GET /api/v1/account/homes`
+
+Returns every non-publisher care-space membership for the authenticated account.
+Each item contains the care-space ID and name, resident display name,
+`careSetting`, `supportFocus`, membership role, and an `active` flag for the
+home bound to the current bearer session. Publisher camera sessions cannot use
+this account-management route.
+
+### `POST /api/v1/account/homes`
+
+Creates another care space for the authenticated person. The body accepts
+`name`, `care_setting` (`home` or `residence`), and `support_focus` (`general`
+or `mci`). The existing user becomes an `admin` member of the new care space,
+and the response is a new bearer session scoped to it. The original session is
+not implicitly revoked.
+
+### `POST /api/v1/account/homes/{home_id}/activate`
+
+Switches the account's active care space by verifying that the authenticated
+user has a non-publisher membership in `{home_id}` and then issuing a new
+bearer session scoped to that home. A missing membership returns `404`; knowing
+a home ID does not grant access. Clients must replace their active token and
+home ID together before making home-scoped requests.
+
 ### `GET /api/v1/homes/{home_id}/runtime`
 
 Operation ID: `runtime_api_v1_homes__home_id__runtime_get`. Returns `{ home_id, paused, video_capture_consented }`. A revoked `video_capture` consent pauses the runtime flag; it does not imply that historical rows are erased.
+
+## People receiving care
+
+Care recipients are home-scoped care profiles, not login identities. Adding a
+person here does not create a `user`, a `membership`, an invitation, or a
+session. This keeps a residence with many residents, or a household with two
+people receiving care, separate from the caregivers/admins who can access the
+care space.
+
+### `GET /api/v1/homes/{home_id}/care-recipients`
+
+Returns `{ data: [...] }` for the active care space. Each row contains `id`,
+`display_name`, optional `relationship`, optional `room_label`, and
+`created_at`.
+
+### `POST /api/v1/homes/{home_id}/care-recipients`
+
+Creates a care profile with required `display_name` (1–120 trimmed characters)
+and optional `relationship` / `room_label` fields (up to 120 characters each).
+The response wraps the created record in `{ data: ... }`.
+
+### `PATCH /api/v1/homes/{home_id}/care-recipients/{recipient_id}`
+
+Updates the supplied care-profile fields and returns `{ data: ... }`. Empty
+optional strings are normalized to `null`; `display_name` cannot be blank.
+
+### `DELETE /api/v1/homes/{home_id}/care-recipients/{recipient_id}`
+
+Deletes the care profile and returns the deleted record in `{ data: ... }`.
+This operation does not revoke any account or caregiver access because care
+recipients and memberships are independent entities.
+
+These routes use the same authenticated home boundary as other home controls
+and reject publisher-device sessions. Legacy medication and consent subject
+fields still reference user/membership subjects; they are intentionally not
+silently remapped to care-recipient IDs by this CRUD layer.
 
 ## Cameras
 

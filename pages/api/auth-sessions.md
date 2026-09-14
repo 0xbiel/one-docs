@@ -1,6 +1,6 @@
 # Auth, pairing & sessions
 
-These operations create a home/member, authenticate a persistent email identity with a short-lived one-time code, exchange legacy pairing codes for a bearer session, pair a publisher device, and revoke the current session. Codes are six digits, hashed at rest, single-use, and intentionally suitable for the local MVP—not an account recovery protocol.
+These operations create a home/member, authenticate a persistent email identity with a short-lived one-time code, exchange legacy pairing codes for a bearer session, switch among an account's care spaces, pair a publisher device, and revoke the current session. Codes are six digits, hashed at rest, single-use, and intentionally suitable for the local MVP—not an account recovery protocol.
 
 ## `POST /api/v1/auth/email/request`
 
@@ -20,6 +20,33 @@ For `purpose: "login"`, an email that has no household account returns `404 No O
 ## `POST /api/v1/auth/email/verify`
 
 Accepts `{ "email": "caregiver@example.com", "code": "123456" }`. The backend hashes the code, checks the normalized email, expiry, use state, and household membership, then atomically consumes the challenge and creates a bearer session. A reused or expired code returns `400`. The email identity and membership remain the durable account boundary when a caregiver changes phones; client Keychain/session storage is only a local credential cache.
+
+An identity may have memberships in more than one care space. Email sign-in
+still starts in one non-publisher membership; after authentication, clients use
+the account-home routes below to list and activate the intended household or
+residence. Every issued bearer remains scoped to exactly one home.
+
+## `GET /api/v1/account/homes`
+
+Bearer operation for caregiver/resident/admin accounts. Returns `{ "data":
+[...] }` with all non-publisher memberships for the authenticated user and an
+`active` flag for the home on the current session. Camera publisher sessions
+are rejected.
+
+## `POST /api/v1/account/homes`
+
+Creates an additional care space for the same authenticated identity. The body
+contains `name`, optional `care_setting` (`home` by default), and optional
+`support_focus` (`general` by default). The user is added as `admin`, and the
+response contains a fresh bearer session whose `home_id` is the new care
+space. Blank-after-trimming names return `422`.
+
+## `POST /api/v1/account/homes/{home_id}/activate`
+
+Verifies that the current user has a non-publisher membership in `{home_id}`
+and returns a fresh bearer session scoped to it. A care-space switch does not
+make the existing bearer global and does not revoke older sessions; the client
+must replace its active token/home pair and invalidate home-scoped cached data.
 
 ## `GET /api/v1/health`
 
@@ -63,7 +90,7 @@ Operation ID: `device_pairing_status_api_v1_homes__home_id__pairing__pairing_id_
 
 Operation ID: `logout_api_v1_sessions_current_delete`. Bearer operation that deletes the session represented by the current `Authorization` header and returns `{ "ok": true }`. The backend stores only a hash of the token.
 
-There is no password login, refresh-token, introspection, logout-all, or identity-provider endpoint. Email verification and pairing completion are the current passwordless login/session bootstrap operations. Revocation is token-specific; clients must also clear local state and disconnect SSE/LiveKit resources.
+There is no password login, refresh-token, introspection, logout-all, or identity-provider endpoint. Email verification and pairing completion are the current passwordless login/session bootstrap operations. Care-space creation/activation can issue another home-scoped session, but they are not refresh operations and do not revoke older tokens. Revocation is token-specific; clients must also clear local state and disconnect SSE/LiveKit resources.
 
 ## Gates and failure modes
 

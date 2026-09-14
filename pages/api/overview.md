@@ -1,6 +1,6 @@
 # API overview
 
-The FastAPI application publishes generated OpenAPI at `/api/v1/openapi.json` and commits the same contract to `one/contracts/openapi.json`. The current contract describes 52 paths, 61 operations, and 37 component schemas. Regenerate it with `PYTHONPATH=. python scripts/generate_openapi.py`; frontend types are generated from that artifact. All product routes are versioned under `/api/v1`; health and pairing start have their own bootstrap policy, while member data is bearer-protected.
+The FastAPI application publishes generated OpenAPI at `/api/v1/openapi.json` and commits the same contract to `one/contracts/openapi.json`. The current contract describes 61 paths, 75 operations, and 56 component schemas. Regenerate it with `ONE_DATABASE_URL=sqlite:////tmp/one-openapi.sqlite PYTHONPATH=. python scripts/generate_openapi.py` when local Docker PostgreSQL is not resolvable; frontend types are generated from that artifact. All product routes are versioned under `/api/v1`; health and pairing start have their own bootstrap policy, while member data is bearer-protected.
 
 This section is an implementation reference, not a product promise. Route names, operation IDs, request constraints, and response status codes below were checked against the committed contract and the current FastAPI handlers. The contract is authoritative when a client and a prose page disagree.
 
@@ -17,7 +17,8 @@ then provide the exact calls and schemas.
 | --- | --- | --- |
 | Health | `GET /api/v1/health` | Public |
 | Identity, pairing/session | `POST /api/v1/auth/email/request`, `POST /api/v1/auth/email/verify`, `POST /api/v1/pairing/start`, `POST /api/v1/pairing/complete`, `DELETE /api/v1/sessions/current`, `POST /api/v1/homes/{home_id}/pairing/start` | Persistent email challenge / device code / bearer |
-| Identity/home | `GET /api/v1/me`, `GET /api/v1/homes/{home_id}/runtime` | Bearer + home membership |
+| Identity/home | `GET /api/v1/me`, `GET/POST /api/v1/account/homes`, `POST /api/v1/account/homes/{home_id}/activate`, `GET /api/v1/homes/{home_id}/runtime` | Bearer + verified home membership; publishers blocked from account-home management |
+| Care recipients | `GET/POST /api/v1/homes/{home_id}/care-recipients`, `PATCH/DELETE /api/v1/homes/{home_id}/care-recipients/{recipient_id}` | Bearer + active home boundary; publisher blocked; care profile does not create account access |
 | Setup | Cameras, rooms, maps, scene, calibrations, automatic map-generation jobs, and strict RoomPlan uploads | Bearer + home membership; paired publisher limited to its own camera job |
 | Objects/vision | Objects, last-seen, observations, `POST /api/v1/homes/{home_id}/vision/frames` | Bearer; vision also needs active `video_capture` consent |
 | Events/SSE | `GET /api/v1/homes/{home_id}/events`, `GET /api/v1/homes/{home_id}/events/stream` | Bearer + home membership |
