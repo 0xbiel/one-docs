@@ -64,7 +64,11 @@ The camera map uses an accessible SVG renderer with polygons, walls, camera
 pose, and confidence metadata. The former hardcoded room and anchor flow are no
 longer part of the camera map surface. The Three.js renderer is a separate
 LiDAR-only path and consumes validated RoomPlan geometry rather than generating
-a room box.
+a room box. While `/dashboard/map` is mounted, the client refreshes scene,
+current-map, and last-seen object data every two seconds. The RoomPlan/USDZ
+model stays mounted while overlays are replaced from the latest observations,
+which keeps registered-camera and concurrent-person markers close to the live
+vision stream without repeatedly downloading or rebuilding the 3D model.
 
 ## Docker route
 

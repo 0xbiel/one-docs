@@ -138,6 +138,13 @@ current implementation.
 
 The Account/Settings view exposes purpose-level consent, pause/resume controls, export, deletion requests, and session logout. The Family view lets an authorized person edit a non-owner member's live role or swipe to reveal a destructive access-removal action; confirmation is required, self/owner changes are blocked, and the backend revokes removed sessions. `PrivacyInfo.xcprivacy` is part of the target. Native demo behavior and backend-backed behavior are separate validation steps.
 
+While the native Map view is visible, `AppStore.refreshMapData()` refreshes the
+scene and derived room objects every two seconds. RealityKit keeps the cached
+RoomPlan USDZ mounted and rebuilds only its lightweight camera/person overlays,
+so fresh concurrent-person observations appear without reloading the room
+asset. Person markers remain intentionally transient and disappear after the
+same 12-second live-map window used by the web renderer.
+
 ## Styling tokens
 
 `OneTheme` centralizes adaptive canvas, surface, inverse-surface, ink, secondary ink, blue, cyan, mint, and amber tokens. The app keeps dark inverse surfaces for camera/assistant cards while adapting the canvas and text to light/dark traits. `LiquidGlassControl` uses `glassEffect` on iOS 26 and a material fallback on earlier systems.

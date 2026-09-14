@@ -15,7 +15,15 @@ The response includes detections, a detector version, any derived observation/ev
 
 ## Detection contract
 
-Each detection carries a candidate label, confidence, bounding box, and projection. Temporal tracking stabilizes repeated hits. Production detection is performed by the configured local YOLO-World checkpoint through the geometry worker; an unavailable worker returns `503` rather than silently switching to a fake detector.
+Each detection carries a candidate label, confidence, bounding box, transient
+track ID, and projection. Temporal tracking stabilizes repeated hits and keeps
+same-label detections one-to-one within each frame, so two or more people in
+the camera view can remain separate live tracks instead of collapsing into one
+`person` observation. Person tracks are persisted at the live-camera cadence;
+inactive track/object slots are eligible for reuse after the 12-second live-map
+visibility window. Production detection is performed by the configured local
+YOLO-World checkpoint through the geometry worker; an unavailable worker
+returns `503` rather than silently switching to a fake detector.
 
 If the camera has an active RoomPlan registration, the projection uses its
 stored camera transform and intrinsics (or a bounded FOV estimate) to intersect
