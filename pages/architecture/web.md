@@ -34,7 +34,11 @@ account settings, and sign-out now live in a profile menu opened from the header
 avatar instead of using separate header buttons or a duplicate drawer footer.
 The care-recipient chooser is rendered as an application listbox rather than a
 native browser/OS `<select>`, so its open menu keeps the same ONE styling across
-Safari, Chrome, desktop, tablet, and phone layouts.
+Safari, Chrome, desktop, tablet, and phone layouts. When the active care space
+has no care recipients, the listbox includes an **Add person** action that opens
+the Family care-profile editor directly. The shell also omits divider rules
+between the header, sidebar, and main canvas so those three surfaces read as one
+continuous workspace.
 
 ## Browser publisher
 
