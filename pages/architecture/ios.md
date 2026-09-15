@@ -36,6 +36,11 @@ a space already completed by that user does not repeat it. The Family surface
 also manages the people receiving care for the active space independently from
 the people who have ONE access, so a household can contain a couple and a
 residence can contain several care recipients without creating login accounts.
+Medication reminders follow those care-recipient profile IDs directly: enabling
+reminders records recipient-scoped consent, plan creation sends the selected
+care-recipient ID separately from the optional assigned-caregiver user ID, and
+check-ins retain who marked the reminder. UUIDs sent in medication request
+bodies are normalized to the backend's canonical lowercase representation.
 
 ## Native project layout
 

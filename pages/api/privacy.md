@@ -12,12 +12,13 @@ Operation ID: `consent_api_v1_homes__home_id__consents_post`. Bearer home member
 publishers may record only their own `video_capture` or `audio_capture`
 decision, while other consent purposes remain blocked. Request (`ConsentIn`)
 requires `purpose` (1–120 chars) and `policy_version` (1–40 chars), with
-`granted` defaulting to `true` and optional `subject_user_id`. Without a subject
-ID, the actor is the subject. Represented-subject decisions require
-admin/caregiver role and an actual consent/authority process outside this
-endpoint.
+`granted` defaulting to `true`. The request can carry either optional
+`subject_user_id` for a login identity or `care_recipient_id` for a care profile;
+the two scopes cannot be combined. Without either ID, the actor is the subject.
+Care-recipient and represented-user decisions require admin/caregiver role and
+an actual consent/authority process outside this endpoint.
 
-The response contains `id`, `granted`, `subject_user_id`, and current `paused` state. Recording `video_capture` updates the home runtime pause flag.
+The response contains `id`, `granted`, `subject_user_id`, `care_recipient_id`, and current `paused` state. Recording `video_capture` updates the home runtime pause flag.
 
 ## `POST /api/v1/homes/{home_id}/privacy/export`
 

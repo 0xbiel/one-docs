@@ -57,7 +57,8 @@ care space.
 
 Returns `{ data: [...] }` for the active care space. Each row contains `id`,
 `display_name`, optional `relationship`, optional `room_label`, and
-`created_at`.
+`medication_reminders_enabled` plus `created_at`. The reminder flag is derived
+from the latest recipient-scoped `medication_management` consent.
 
 ### `POST /api/v1/homes/{home_id}/care-recipients`
 
@@ -77,9 +78,10 @@ This operation does not revoke any account or caregiver access because care
 recipients and memberships are independent entities.
 
 These routes use the same authenticated home boundary as other home controls
-and reject publisher-device sessions. Legacy medication and consent subject
-fields still reference user/membership subjects; they are intentionally not
-silently remapped to care-recipient IDs by this CRUD layer.
+and reject publisher-device sessions. Medication and consent APIs now expose an
+explicit `care_recipient_id` scope for these profiles. That field is distinct
+from the legacy `subject_user_id` membership scope; the server never silently
+converts one identity type into the other.
 
 ## Cameras
 
