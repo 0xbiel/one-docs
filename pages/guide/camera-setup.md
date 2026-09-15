@@ -90,9 +90,32 @@ while the iPhone is used only as the RoomPlan scanner.
    this camera in 3D**. ONE captures a short burst from that fixed view and
    matches it against the RoomPlan landmark index to estimate the Mac camera's
    3D pose.
-7. Confirm the camera reports **Positioned in the RoomPlan 3D map**. If the
-   match cannot be confirmed, improve overlap/lighting or refresh the LiDAR
-   scan and try again without moving the Mac camera.
+7. If automatic localization finds a strong pose, ONE shows it as an **amber
+   preview** on the top-down RoomPlan map. This is only a proposal; it does not
+   replace the active camera position yet.
+8. Select **Yes, this position is correct** to confirm it, or choose **Adjust
+   manually** and click the real camera position on the map. Manual placement
+   also lets you tune viewing direction, downward tilt, and height above the
+   floor before saving.
+9. If the proposal is wrong, select **Try automatic again** or keep the camera
+   usable without a 3D placement. A failed automatic solve never traps setup in
+   a calibration loop.
+10. After the explicit save succeeds, the camera reports **Positioned in the
+    RoomPlan 3D map** and the reviewed transform becomes active.
+
+```mermaid
+stateDiagram-v2
+    [*] --> Ready: Camera paired and publishing
+    Ready --> Localizing: Position this camera in 3D
+    Localizing --> Review: Strong automatic proposal
+    Localizing --> Ready: No confident proposal
+    Review --> Manual: Adjust manually
+    Review --> Saving: Yes, this position is correct
+    Manual --> Saving: Save manual position
+    Review --> Ready: Try automatic again
+    Saving --> Positioned: Save accepted
+    Saving --> Review: Save rejected
+```
 
 The LiDAR scan may be completed before or after camera pairing. It belongs to
 the household, not to the camera credential.
@@ -103,7 +126,10 @@ There are two truthful camera-registration paths. For a separate Mac/browser
 camera, the native app uploads the RoomPlan map plus visual landmarks, then the
 fixed browser camera supplies its own frames to the RoomPlan localization
 endpoint. Feature matching plus PnP/RANSAC estimates that camera's pose in the
-metric RoomPlan coordinate frame.
+metric RoomPlan coordinate frame. Automatic localization is review-only during
+setup: a strong solve becomes a pending proposal, and an existing confirmed
+pose remains active until the user explicitly saves the reviewed or manually
+adjusted transform.
 
 If the scanning iPhone is itself the exact paired camera that will remain
 fixed, you may explicitly select that camera instead of **Map only**. In that

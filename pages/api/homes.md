@@ -231,6 +231,61 @@ The generic map upload accepts `map_data`, optional `room_id`, and a coordinate
 frame, then stores source `legacy-2d` with `rescan-required`. It is a
 compatibility boundary for existing clients; it cannot unlock the 3D view.
 
+## Fixed-camera RoomPlan placement review
+
+The camera setup UI treats automatic localization as a proposal. It never
+silently replaces a confirmed transform.
+
+### `GET /api/v1/homes/{home_id}/cameras/{camera_id}/roomplan-readiness`
+
+Returns the active RoomPlan map ID/source/dimension plus whether the private
+visual landmark artifact is ready. A publisher may inspect only its own camera.
+This is the lightweight polling route used before attempting automatic 3D
+placement.
+
+### `POST /api/v1/homes/{home_id}/cameras/{camera_id}/localize-roomplan`
+
+Accepts the fixed-camera frames plus FOV/intrinsics and optional `review_only`.
+Camera setup sends `review_only=true`. A strong solve returns
+`status=positioned`, `camera_to_world`, confidence and PnP diagnostics, but is
+stored as `needs_review` and returns `review_required=true`; it does not
+invalidate the current active registration. A weak or scene-invalid pose
+returns `needs_rescan` with no usable transform.
+
+### `GET /api/v1/homes/{home_id}/cameras/{camera_id}/roomplan-placement-preview`
+
+Returns the active native RoomPlan scene used by the placement-review UI. This
+route deliberately exists separately from the general `/scene` endpoint so a
+paired publisher can review only its own camera placement without gaining
+household dashboard permissions. Another publisher camera receives `403`; a
+missing active native RoomPlan map returns `409`. Admin/caregiver sessions may
+also read it.
+
+### `GET /api/v1/homes/{home_id}/cameras/{camera_id}/roomplan-placement-preview/usdz`
+
+Returns the active RoomPlan USDZ through the same camera-scoped authorization
+boundary. The publisher-facing top-down preview uses this asset while the
+normal map USDZ route remains a household dashboard surface.
+
+### `POST /api/v1/homes/{home_id}/camera-registrations/roomplan`
+
+Explicitly activates a reviewed automatic proposal or a manually constructed
+4×4 `camera_to_world` transform for the active native RoomPlan revision. A
+publisher can register only its own camera. The successful save invalidates the
+prior active and pending-review rows for that camera; until this endpoint
+succeeds, the old active placement remains unchanged.
+
+```mermaid
+flowchart LR
+    localize["Automatic localize<br/>review_only=true"] --> pending["needs_review proposal"]
+    pending --> preview["Camera-scoped RoomPlan preview<br/>amber marker"]
+    preview --> confirm["Confirm automatic transform"]
+    preview --> manual["Manual X/Z + yaw/tilt/height"]
+    confirm --> register["POST camera-registrations/roomplan"]
+    manual --> register
+    register --> active["Active camera placement"]
+```
+
 ## Camera pose, not fake calibration
 
 The required automatic camera result stores a relative camera pose, image-space

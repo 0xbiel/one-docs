@@ -91,7 +91,11 @@ Automatic camera generation uses these additional routes:
 | POST /api/v1/homes/{home_id}/cameras/{camera_id}/map-generation/{job_id}/frames | Accepts 3–20 bounded RGB samples; only the paired publisher may submit them |
 | GET /api/v1/homes/{home_id}/cameras/{camera_id}/map-generation/{job_id} | Returns progress, terminal state, metrics, model version, and map ID when ready |
 | POST /api/v1/homes/{home_id}/maps/{map_id}/visual-landmarks | Builds and stores a derived ORB landmark index from bounded native RGB + LiDAR depth samples for the active RoomPlan revision |
-| POST /api/v1/homes/{home_id}/cameras/{camera_id}/localize-roomplan | Matches fixed-camera JPEGs to the RoomPlan landmark index and stores a visual RoomPlan registration only when PnP quality passes |
+| GET /api/v1/homes/{home_id}/cameras/{camera_id}/roomplan-readiness | Lets the paired camera check whether the active RoomPlan revision and landmark index are ready without exposing household scene controls |
+| POST /api/v1/homes/{home_id}/cameras/{camera_id}/localize-roomplan | Matches fixed-camera JPEGs to the RoomPlan landmark index. Camera setup sends `review_only=true`, so a strong solve is stored as `needs_review` and returned as a proposal rather than becoming active |
+| GET /api/v1/homes/{home_id}/cameras/{camera_id}/roomplan-placement-preview | Returns the active RoomPlan scene needed to review that camera's placement; a publisher may fetch only its own camera preview |
+| GET /api/v1/homes/{home_id}/cameras/{camera_id}/roomplan-placement-preview/usdz | Returns the active RoomPlan USDZ through the same camera-scoped publisher-safe boundary |
+| POST /api/v1/homes/{home_id}/camera-registrations/roomplan | Explicitly confirms an automatic proposal or a manually adjusted transform. Only this save replaces the active placement |
 | POST /api/v1/homes/{home_id}/vision/frames | Runs bounded local YOLO-World detection and, for a registered camera, projects stable detections into the RoomPlan frame |
 
 The frame endpoint accepts `frame_base64`, `width`, `height`, and optional
@@ -181,10 +185,36 @@ to scene consumers. Creating a new map revision invalidates the old placement.
 native RGB/depth samples for the active RoomPlan revision and stores only the
 derived ORB landmark artifact. `POST /api/v1/homes/{home_id}/cameras/{camera_id}/localize-roomplan`
 accepts one to eight fixed-camera JPEGs, matches their ORB features to those
-metric landmarks, and runs PnP/RANSAC. A strong solution stores an active
-`visual-roomplan-registration` calibration with a 4×4 camera transform,
-inlier count, match count, reprojection error, confidence, and intrinsics
-source. Weak or ambiguous matching returns `needs_rescan` and exposes no pose.
+metric landmarks, and runs PnP/RANSAC. Camera setup calls it with
+`review_only=true`: a strong solution is stored as `needs_review` and returned
+with `review_required=true`, including the 4×4 camera transform, inlier count,
+match count, reprojection error, confidence, and intrinsics source. It does
+**not** invalidate an already confirmed active placement. Weak or ambiguous
+matching returns `needs_rescan` and exposes no proposal.
+
+The publisher then loads the active RoomPlan scene and USDZ through the
+camera-scoped placement-preview routes. The proposed camera is rendered in
+amber. The user can confirm it, switch to manual placement and click a floor
+position, tune yaw/tilt/height, or discard it and retry automatic matching. Only
+`POST /camera-registrations/roomplan` activates the reviewed transform; that
+explicit save is the boundary that supersedes the previous active or pending
+placement.
+
+```mermaid
+stateDiagram-v2
+    [*] --> Ready: Fixed camera + RoomPlan landmarks ready
+    Ready --> Localizing: Capture short fixed-camera burst
+    Localizing --> Review: Strong solve stored as needs_review
+    Localizing --> Ready: Weak solve / no proposal
+    Review --> Manual: Adjust manually
+    Manual --> Review: Return to automatic proposal
+    Review --> Saving: Confirm automatic proposal
+    Manual --> Saving: Save manual transform
+    Review --> Ready: Discard / retry later
+    Saving --> Active: Explicit registration succeeds
+    Saving --> Review: Save rejected
+    Active --> Ready: New RoomPlan revision requires relocalization
+```
 
 The browser's camera-derived 2D sweep remains independent approximate evidence;
 it is never converted or relabeled as RoomPlan geometry. Metric 3D placement is
@@ -192,6 +222,28 @@ claimed only after one of the explicit RoomPlan registration paths succeeds.
 When a camera has an active registration, local object detections can be
 projected into `roomplan-local`, associated with a RoomPlan room zone, and
 persisted as derived observations. Raw frame bytes remain transient.
+
+### Publisher-scoped review boundary
+
+The review UI needs map geometry but a paired camera publisher must not gain the
+caregiver/admin scene permissions used by the dashboard. The API therefore
+exposes only the active RoomPlan scene and USDZ needed for that publisher's own
+camera placement.
+
+```mermaid
+flowchart LR
+    publisher["Paired camera publisher"] --> own{"Camera ID belongs to this publisher?"}
+    own -->|"No"| deny["403"]
+    own -->|"Yes"| preview["Camera-scoped placement preview"]
+    preview --> scene["Active RoomPlan scene"]
+    preview --> usdz["Active RoomPlan USDZ"]
+    publisher -. blocked .-> general["General /scene and /maps/:id/usdz"]
+    caregiver["Caregiver / admin"] --> general
+    caregiver --> preview
+```
+
+This keeps the review experience available on the fixed camera device without
+relaxing the household dashboard authorization boundary.
 
 ## Current checkout status
 
