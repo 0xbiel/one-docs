@@ -158,10 +158,16 @@ settings or directly from the map's **Calibration needed** card. The phone is a
 controller and RoomPlan display; it never substitutes its own camera image for
 the fixed camera being positioned.
 
+The API chooses only walkable floor positions: native RoomPlan object volumes
+are projected onto the floor with extra standing clearance, and targets are
+kept away from those occupied footprints and from walls. The iPhone guide shows
+wall/furniture outlines in the top-down plan and pins the same targets onto the
+interactive USDZ model when it is available.
+
 ```mermaid
 flowchart LR
-    lidar["iPhone RoomPlan map<br/>known metric floor"] --> targets["API chooses 4<br/>standing targets"]
-    targets --> phone["iPhone highlights<br/>target N"]
+    lidar["iPhone RoomPlan map<br/>floor + furniture volumes"] --> targets["API chooses 4 clear<br/>standing targets"]
+    targets --> phone["iPhone shows target N<br/>in 2D + 3D"]
     phone --> ready["Caregiver taps<br/>I'm standing here"]
     ready --> command["capture_requested"]
     command --> mac["Fixed Mac/browser camera<br/>captures 2 frames"]

@@ -209,12 +209,23 @@ placement.
 
 The native iPhone app can now coordinate the same person-anchor calibration
 without turning the iPhone camera into the fixed camera. The API derives four
-standing targets from the active RoomPlan floor polygon. The caregiver walks to
+standing targets from the active RoomPlan floor polygon. Target selection treats
+RoomPlan furniture/object volumes such as beds, tables, sofas, storage, and
+other raised geometry as occupied floor area, expands those footprints with a
+standing-clearance margin, and keeps targets away from room boundaries. If four
+separated clear-floor points cannot be found, calibration is rejected instead
+of asking the caregiver to stand on obstructed geometry. The caregiver walks to
 each target with the iPhone; when they tap **I'm standing on point N**, the API
 changes that target to `capture_requested`. The paired browser publisher polls
 only its own session, captures two short frames from the fixed camera, and
 submits those frames with the known RoomPlan XYZ point as the implicit person
 anchor.
+
+The native calibration guide renders wall borders and RoomPlan object
+footprints in its top-down view. When the USDZ attachment is available it also
+shows the same four targets directly on the interactive 3D RoomPlan model, so a
+caregiver can match the highlighted point against furniture in the physical
+room before moving there.
 
 The session itself is deliberately non-durable. Its ID, target coordinates,
 progress, and final proposal exist in API process memory for at most ten
