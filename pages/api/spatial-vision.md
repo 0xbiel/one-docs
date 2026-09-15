@@ -267,7 +267,7 @@ visual bridge:
    `needs_rescan`.
 6. The backend stores only the derived landmark index, not the raw RGB/depth
    scan frames.
-7. The fixed camera sends one to eight current JPEGs. ORB descriptors are
+7. The fixed camera sends one to sixteen current JPEGs. ORB descriptors are
    matched to the stored landmark descriptors with a ratio test.
 8. `solvePnPRansac` estimates the camera pose from the 2D↔3D correspondences.
 9. ONE accepts a positioned solution only when the solution is strong enough
@@ -278,6 +278,18 @@ The accepted transform is persisted as `visual-roomplan-registration` in the
 `roomplan-local` coordinate frame. Creating a new RoomPlan map revision
 invalidates old registrations because their 3D coordinate system is no longer
 guaranteed to match.
+
+When visual landmark matching is not strong enough for a separate fixed camera,
+the caregiver can run the guided floor-point calibration. The iPhone shows safe
+RoomPlan floor targets while the fixed publisher captures one or two transient
+frames at each point. Six targets are used when possible. The geometry worker
+uses the detected person's floor contact as a 2D↔3D correspondence, aggregates
+the short burst for robustness, sweeps plausible focal lengths when browser
+intrinsics are unknown, evaluates both planar IPPE solutions, and refines the
+pose against all targets. Room bounds, camera height, uprightness and
+reprojection residuals are used to reject implausible solutions. The result is
+still review-only until the caregiver confirms the map preview or saves a
+manual placement.
 
 ```mermaid
 flowchart LR

@@ -260,12 +260,15 @@ returns `needs_rescan` with no usable transform.
 
 ### `POST /api/v1/homes/{home_id}/cameras/{camera_id}/roomplan-calibration-session`
 
-Starts a caregiver-controlled four-point RoomPlan calibration session for one
-fixed camera. The active map must be native `roomplan-lidar-3d`, its visual
-landmark artifact must be ready, and video capture consent must be active. The
-response contains four metric floor targets, current progress, a ten-minute
-expiry, and `raw_frames_persisted=false`. Session state is process-local and is
-not durable across API restarts.
+Starts a caregiver-controlled RoomPlan calibration session for one fixed
+camera. The active map must be native `roomplan-lidar-3d`, its visual landmark
+artifact must be ready, and video capture consent must be active. The API uses
+six well-spread, obstacle-cleared floor targets when the RoomPlan floor has
+enough safe geometry, with four as the minimum fallback. Extra safe points are
+kept as replacements when the fixed camera cannot see a person at a requested
+target. The response contains the metric targets, current progress, a
+ten-minute expiry, and `raw_frames_persisted=false`. Session state is
+process-local and is not durable across API restarts.
 
 ### `GET /api/v1/homes/{home_id}/cameras/{camera_id}/roomplan-calibration-session`
 
@@ -283,12 +286,23 @@ wrong RoomPlan XYZ point.
 ### `POST /api/v1/homes/{home_id}/cameras/{camera_id}/roomplan-calibration-session/frames`
 
 Publisher-only endpoint for the paired fixed camera. It accepts one or two
-bounded frames for the currently requested target. After targets 1–3 the API
-advances to the next standing point. Target 4 triggers the existing
-`localize-roomplan` path with `review_only=true` and four known person anchors.
-Frame bytes remain in memory only during this collection and are cleared before
-the review response. A strong solve returns `status=review` plus a proposal; it
-still does not activate the camera.
+bounded frames for the currently requested target, up to sixteen transient
+frames for one guided session. The API advances until every current target is
+captured, then calls the existing `localize-roomplan` path with
+`review_only=true` and all known person anchors. Frame bytes remain in memory
+only during this collection and are cleared before the review response. A
+strong solve returns `status=review` plus a proposal; it still does not activate
+the camera.
+
+The guided solver treats the browser camera focal length as unknown when
+calibrated intrinsics are unavailable. It evaluates a bounded horizontal-FOV
+search, solves both IPPE planar-pose hypotheses for the floor correspondences,
+refines each pose with Levenberg-Marquardt, and ranks the candidates using
+reprojection residuals plus RoomPlan room bounds, camera height, uprightness,
+and positive depth. Repeated person detections for a target are spatially
+clustered and median-combined so a short two-frame burst is less sensitive to a
+single bounding-box edge or a bystander. Diagnostics report the selected FOV,
+per-target residuals, target spread, and physical scene checks.
 
 ### `DELETE /api/v1/homes/{home_id}/cameras/{camera_id}/roomplan-calibration-session`
 

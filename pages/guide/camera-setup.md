@@ -87,9 +87,12 @@ while the iPhone is used only as the RoomPlan scanner.
    3D asset, and private visual landmarks used to locate a separate fixed
    camera later.
 6. On the fixed Mac camera page, keep the camera still and select **Position
-   this camera in 3D**. ONE captures a short burst from that fixed view and
-   matches it against the RoomPlan landmark index to estimate the Mac camera's
-   3D pose.
+   this camera in 3D**. ONE first attempts visual landmark localization. If the
+   caregiver-guided calibration is needed, the iPhone shows six safe floor
+   points when the room has enough clear geometry (four is the minimum
+   fallback). Stand briefly on each highlighted point while the fixed camera
+   captures its short transient burst. Furniture remains visible in the 2D/3D
+   guide so each target can be matched to the real room.
 7. If automatic localization finds a strong pose, ONE shows it as an **amber
    preview** on the top-down RoomPlan map. This is only a proposal; it does not
    replace the active camera position yet.
@@ -97,9 +100,10 @@ while the iPhone is used only as the RoomPlan scanner.
    manually** and click the real camera position on the map. Manual placement
    also lets you tune viewing direction, downward tilt, and height above the
    floor before saving.
-9. If the proposal is wrong, select **Try automatic again** or keep the camera
-   usable without a 3D placement. A failed automatic solve never traps setup in
-   a calibration loop.
+9. If the proposal is wrong, select **Try automatic again**, place it manually,
+   or keep the camera usable without a 3D placement. A failed automatic solve
+   never traps setup in a calibration loop. Guided calibration frames are
+   transient and are discarded after the solve, cancel, or expiry.
 10. After the explicit save succeeds, the camera reports **Positioned in the
     RoomPlan 3D map** and the reviewed transform becomes active.
 

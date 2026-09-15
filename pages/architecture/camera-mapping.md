@@ -93,7 +93,7 @@ Automatic camera generation uses these additional routes:
 | POST /api/v1/homes/{home_id}/maps/{map_id}/visual-landmarks | Builds and stores a derived ORB landmark index from bounded native RGB + LiDAR depth samples for the active RoomPlan revision |
 | GET /api/v1/homes/{home_id}/cameras/{camera_id}/roomplan-readiness | Lets the paired camera check whether the active RoomPlan revision and landmark index are ready without exposing household scene controls |
 | POST /api/v1/homes/{home_id}/cameras/{camera_id}/localize-roomplan | Matches fixed-camera JPEGs to the RoomPlan landmark index. Camera setup sends `review_only=true`, so a strong solve is stored as `needs_review` and returned as a proposal rather than becoming active |
-| POST /api/v1/homes/{home_id}/cameras/{camera_id}/roomplan-calibration-session | Caregiver starts a 10-minute in-memory four-point calibration session for one fixed camera |
+| POST /api/v1/homes/{home_id}/cameras/{camera_id}/roomplan-calibration-session | Caregiver starts a 10-minute in-memory guided calibration session; it uses six safe, spread-out floor targets when available and falls back to four when geometry is limited |
 | GET /api/v1/homes/{home_id}/cameras/{camera_id}/roomplan-calibration-session | Caregiver or that camera's publisher reads target/progress/proposal state; raw frame bytes are never returned |
 | POST /api/v1/homes/{home_id}/cameras/{camera_id}/roomplan-calibration-session/request-capture | Caregiver marks the current standing point ready so the fixed camera may capture it |
 | POST /api/v1/homes/{home_id}/cameras/{camera_id}/roomplan-calibration-session/frames | Only that paired publisher may submit the requested one- or two-frame burst; frames stay process-memory-only and are cleared after solve/cancel/expiry |
@@ -107,6 +107,15 @@ The frame endpoint accepts `frame_base64`, `width`, `height`, and optional
 `captured_at`. Each frame is limited to 3 MB after decoding and the whole batch
 to 18 MB. Frame bytes are held only during processing and are not written to the
 database, object store, logs, or map response.
+
+Guided person calibration is intentionally overdetermined rather than treating
+four coplanar points as a complete camera calibration. Browser capture APIs do
+not provide a calibrated focal length, and planar IPPE can yield multiple pose
+hypotheses. The worker therefore evaluates a bounded FOV sweep, solves all
+captured floor anchors together, refines candidate poses, and uses RoomPlan
+physical constraints to choose a proposal. Six targets improve conditioning
+and make a single noisy person-foot observation less influential; the UI still
+requires review or manual placement before the transform becomes active.
 
 ## Internal geometry-service contract
 
