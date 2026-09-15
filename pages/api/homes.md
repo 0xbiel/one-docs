@@ -90,7 +90,11 @@ converts one identity type into the other.
 Operation ID: `cameras_api_v1_homes__home_id__cameras_get`. Returns `{ data:
 [...] }` with enabled camera read models, newest first. Each read model includes
 the publisher-backed device name plus `online` / `paused` status from the
-current runtime state.
+current runtime state. When a native RoomPlan map is current, the row also
+contains `calibration_needed`, `roomplan_registration_status`, and
+`roomplan_map_id`. `calibration_needed=false` is reported only for a valid
+active registration against that exact RoomPlan revision; an old-map or
+pending-review pose does not clear the badge.
 
 ### `POST /api/v1/homes/{home_id}/cameras`
 
@@ -253,6 +257,44 @@ Camera setup sends `review_only=true`. A strong solve returns
 stored as `needs_review` and returns `review_required=true`; it does not
 invalidate the current active registration. A weak or scene-invalid pose
 returns `needs_rescan` with no usable transform.
+
+### `POST /api/v1/homes/{home_id}/cameras/{camera_id}/roomplan-calibration-session`
+
+Starts a caregiver-controlled four-point RoomPlan calibration session for one
+fixed camera. The active map must be native `roomplan-lidar-3d`, its visual
+landmark artifact must be ready, and video capture consent must be active. The
+response contains four metric floor targets, current progress, a ten-minute
+expiry, and `raw_frames_persisted=false`. Session state is process-local and is
+not durable across API restarts.
+
+### `GET /api/v1/homes/{home_id}/cameras/{camera_id}/roomplan-calibration-session`
+
+Returns the active session's target/progress/proposal metadata. Caregivers may
+read same-home sessions; a publisher may read only its own camera session. Raw
+JPEGs and the transient frame-anchor bundle are never returned.
+
+### `POST /api/v1/homes/{home_id}/cameras/{camera_id}/roomplan-calibration-session/request-capture`
+
+Caregiver command that marks the current target `capture_requested`. The body
+contains `target_index`. The index must match the server's current target, so a
+stale iPhone screen cannot accidentally label a fixed-camera frame with the
+wrong RoomPlan XYZ point.
+
+### `POST /api/v1/homes/{home_id}/cameras/{camera_id}/roomplan-calibration-session/frames`
+
+Publisher-only endpoint for the paired fixed camera. It accepts one or two
+bounded frames for the currently requested target. After targets 1–3 the API
+advances to the next standing point. Target 4 triggers the existing
+`localize-roomplan` path with `review_only=true` and four known person anchors.
+Frame bytes remain in memory only during this collection and are cleared before
+the review response. A strong solve returns `status=review` plus a proposal; it
+still does not activate the camera.
+
+### `DELETE /api/v1/homes/{home_id}/cameras/{camera_id}/roomplan-calibration-session`
+
+Cancels the session and drops all transient frame/anchor state immediately. A
+new RoomPlan revision or session expiry likewise invalidates the session rather
+than applying stale coordinates.
 
 ### `GET /api/v1/homes/{home_id}/cameras/{camera_id}/roomplan-placement-preview`
 

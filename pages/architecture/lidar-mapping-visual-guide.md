@@ -151,6 +151,54 @@ Passing the localization gate creates a **proposal**, not an active placement.
 The camera becomes active in the map only after a person reviews and saves that
 transform.
 
+### Remote four-point calibration from the iPhone
+
+The caregiver can run person-anchor calibration from the native iPhone camera
+settings or directly from the map's **Calibration needed** card. The phone is a
+controller and RoomPlan display; it never substitutes its own camera image for
+the fixed camera being positioned.
+
+```mermaid
+flowchart LR
+    lidar["iPhone RoomPlan map<br/>known metric floor"] --> targets["API chooses 4<br/>standing targets"]
+    targets --> phone["iPhone highlights<br/>target N"]
+    phone --> ready["Caregiver taps<br/>I'm standing here"]
+    ready --> command["capture_requested"]
+    command --> mac["Fixed Mac/browser camera<br/>captures 2 frames"]
+    mac --> anchors["Frames + known target XYZ"]
+    anchors --> repeat{"4 targets done?"}
+    repeat -->|"No"| phone
+    repeat -->|"Yes"| solve["Review-only pose solve"]
+    solve --> review["Native preview + confirm<br/>or manual placement"]
+```
+
+```mermaid
+sequenceDiagram
+    actor P as Person with iPhone
+    participant I as ONE iOS
+    participant A as ONE API
+    participant W as Fixed web camera
+
+    I->>A: Start transient calibration session
+    A-->>I: Point 1 of 4 + XYZ
+    P->>P: Walk to highlighted point
+    I->>A: Request fixed-camera capture
+    W->>A: Poll session
+    A-->>W: capture_requested(point 1)
+    W->>W: Capture fixed camera burst
+    W->>A: Submit frames for point 1
+    A-->>I: Point 2 of 4
+    Note over I,W: Repeat through point 4
+    A-->>I: Review-only camera proposal
+```
+
+The transient session retains only target coordinates, state, and the final
+proposal. Calibration JPEGs live in process memory only while the four points
+are being collected and are cleared when solving starts, the user cancels, or
+the session expires. If the automatic marker is wrong, the iPhone top-down map
+accepts a manual X/Z point plus camera height and yaw, then sends that reviewed
+transform through the same explicit registration boundary.
+
 ## 5. Review before activation
 
 Automatic localization is deliberately one step short of activation. The fixed
