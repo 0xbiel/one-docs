@@ -239,15 +239,16 @@ compatibility boundary for existing clients; it cannot unlock the 3D view.
 
 ## Fixed-camera RoomPlan placement review
 
-The camera setup UI treats automatic localization as a proposal. It never
-silently replaces a confirmed transform.
+The camera setup UI runs localization only after the caregiver explicitly
+starts positioning for that camera. The solve is a proposal and never silently
+replaces a confirmed transform.
 
 ### `GET /api/v1/homes/{home_id}/cameras/{camera_id}/roomplan-readiness`
 
 Returns the active RoomPlan map ID/source/dimension plus whether the private
 visual landmark artifact is ready. A publisher may inspect only its own camera.
-This is the lightweight polling route used before attempting automatic 3D
-placement.
+This is the lightweight readiness route used by an already-started positioning
+flow before attempting an on-demand 3D placement proposal.
 
 ### `POST /api/v1/homes/{home_id}/cameras/{camera_id}/localize-roomplan`
 
@@ -262,13 +263,12 @@ returns `needs_rescan` with no usable transform.
 
 Starts a caregiver-controlled RoomPlan calibration session for one fixed
 camera. The active map must be native `roomplan-lidar-3d`, its visual landmark
-artifact must be ready, and video capture consent must be active. The API uses
-six well-spread, obstacle-cleared floor targets when the RoomPlan floor has
-enough safe geometry, with four as the minimum fallback. Extra safe points are
-kept as replacements when the fixed camera cannot see a person at a requested
-target. The response contains the metric targets, current progress, a
-ten-minute expiry, and `raw_frames_persisted=false`. Session state is
-process-local and is not durable across API restarts.
+artifact must be ready, and video capture consent must be active. The current
+mode is `scene_reference`: the fixed camera stays still while the paired
+publisher contributes three short capture rounds of the room. There are no
+floor targets and no person anchors. The response contains the current round,
+three-round progress, a ten-minute expiry, and `raw_frames_persisted=false`.
+Session state is process-local and is not durable across API restarts.
 
 ### `GET /api/v1/homes/{home_id}/cameras/{camera_id}/roomplan-calibration-session`
 
@@ -278,37 +278,55 @@ JPEGs and the transient frame-anchor bundle are never returned.
 
 ### `POST /api/v1/homes/{home_id}/cameras/{camera_id}/roomplan-calibration-session/request-capture`
 
-Caregiver command that marks the current target `capture_requested`. The body
-contains `target_index`. The index must match the server's current target, so a
-stale iPhone screen cannot accidentally label a fixed-camera frame with the
-wrong RoomPlan XYZ point.
+Caregiver command that marks the current reference round `capture_requested`.
+The compatibility field is still named `target_index`, but it now identifies a
+scene-reference round. The index must match the server's current round, so a
+stale iPhone screen cannot advance the session incorrectly.
 
 ### `POST /api/v1/homes/{home_id}/cameras/{camera_id}/roomplan-calibration-session/frames`
 
-Publisher-only endpoint for the paired fixed camera. It accepts one or two
-bounded frames for the currently requested target, up to sixteen transient
-frames for one guided session. The API advances until every current target is
-captured, then calls the existing `localize-roomplan` path with
-`review_only=true` and all known person anchors. Frame bytes remain in memory
-only during this collection and are cleared before the review response. A
-strong solve returns `status=review` plus a proposal; it still does not activate
-the camera.
+Publisher-only endpoint for the paired fixed camera. It accepts a short bounded
+burst for the currently requested reference round, up to sixteen transient
+frames for one session. After the third round the API calls the existing
+`localize-roomplan` path with `review_only=true` and `person_anchors=[]`. Frame
+bytes remain in memory only during collection and are cleared before the review
+response. A strong solve returns `status=review` plus a proposal; it still does
+not activate the camera.
 
-The guided solver treats the browser camera focal length as unknown when
-calibrated intrinsics are unavailable. It evaluates a bounded horizontal-FOV
-search, solves both IPPE planar-pose hypotheses for the floor correspondences,
-refines each pose with Levenberg-Marquardt, and ranks the candidates using
-reprojection residuals plus RoomPlan room bounds, camera height, uprightness,
-and positive depth. Repeated person detections for a target are spatially
-clustered and median-combined so a short two-frame burst is less sensitive to a
-single bounding-box edge or a bystander. Diagnostics report the selected FOV,
-per-target residuals, target spread, and physical scene checks.
+The scene-reference solver uses stable RoomPlan visual landmarks and masks
+transient people and movable seating from feature matching. If calibrated
+intrinsics are unavailable, the browser camera focal length remains unknown:
+the worker evaluates a bounded horizontal-FOV search instead of inserting a
+default 60° lens. PnP/RANSAC, reprojection error, independent-view support,
+RoomPlan bounds, camera height, uprightness, and positive-depth checks still
+gate the proposal. The selected FOV is returned in diagnostics only when those
+checks pass.
 
 ### `DELETE /api/v1/homes/{home_id}/cameras/{camera_id}/roomplan-calibration-session`
 
 Cancels the session and drops all transient frame/anchor state immediately. A
 new RoomPlan revision or session expiry likewise invalidates the session rather
 than applying stale coordinates.
+
+### `POST /api/v1/homes/{home_id}/cameras/{camera_id}/roomplan-calibration-session/commit-reference`
+
+After a scene-reference solve reaches `status=review`, the caregiver may save
+the last accepted fixed-camera frame as that camera's durable reference image.
+The pending frame remains process-memory-only until this explicit commit. The
+saved metadata is tied to the current map revision and does not activate or
+change the camera pose by itself.
+
+### `POST /api/v1/homes/{home_id}/cameras/{camera_id}/reference-snapshot/request-capture`
+
+Requests a fresh reference image from an already paired/positioned publisher.
+This is independent from pose calibration: it lets the map remember what that
+camera normally sees without rerunning PnP.
+
+### `GET /api/v1/homes/{home_id}/cameras/{camera_id}/reference-snapshot`
+
+Returns the saved reference JPEG to an authorized household member or to that
+camera's own publisher. Reference images are per camera and per home; they are
+never used as a substitute for calibrated geometry or an assumed FOV.
 
 ### `GET /api/v1/homes/{home_id}/cameras/{camera_id}/roomplan-placement-preview`
 

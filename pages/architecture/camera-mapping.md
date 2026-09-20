@@ -90,14 +90,17 @@ Automatic camera generation uses these additional routes:
 | GET /api/v1/homes/{home_id}/cameras/{camera_id}/map-generation | Returns the newest job for that camera |
 | POST /api/v1/homes/{home_id}/cameras/{camera_id}/map-generation/{job_id}/frames | Accepts 3–20 bounded RGB samples; only the paired publisher may submit them |
 | GET /api/v1/homes/{home_id}/cameras/{camera_id}/map-generation/{job_id} | Returns progress, terminal state, metrics, model version, and map ID when ready |
-| POST /api/v1/homes/{home_id}/maps/{map_id}/visual-landmarks | Builds and stores a derived ORB landmark index from bounded native RGB + LiDAR depth samples for the active RoomPlan revision |
+| POST /api/v1/homes/{home_id}/maps/{map_id}/visual-landmarks | Builds and stores a derived ORB/SIFT landmark index from bounded native RGB + LiDAR depth samples for the active RoomPlan revision |
 | GET /api/v1/homes/{home_id}/cameras/{camera_id}/roomplan-readiness | Lets the paired camera check whether the active RoomPlan revision and landmark index are ready without exposing household scene controls |
 | POST /api/v1/homes/{home_id}/cameras/{camera_id}/localize-roomplan | Matches fixed-camera JPEGs to the RoomPlan landmark index. Camera setup sends `review_only=true`, so a strong solve is stored as `needs_review` and returned as a proposal rather than becoming active |
-| POST /api/v1/homes/{home_id}/cameras/{camera_id}/roomplan-calibration-session | Caregiver starts a 10-minute in-memory guided calibration session; it uses six safe, spread-out floor targets when available and falls back to four when geometry is limited |
-| GET /api/v1/homes/{home_id}/cameras/{camera_id}/roomplan-calibration-session | Caregiver or that camera's publisher reads target/progress/proposal state; raw frame bytes are never returned |
-| POST /api/v1/homes/{home_id}/cameras/{camera_id}/roomplan-calibration-session/request-capture | Caregiver marks the current standing point ready so the fixed camera may capture it |
-| POST /api/v1/homes/{home_id}/cameras/{camera_id}/roomplan-calibration-session/frames | Only that paired publisher may submit the requested one- or two-frame burst; frames stay process-memory-only and are cleared after solve/cancel/expiry |
+| POST /api/v1/homes/{home_id}/cameras/{camera_id}/roomplan-calibration-session | Caregiver starts a 10-minute in-memory scene-reference session with three short fixed-camera capture rounds; nobody has to stand on map targets |
+| GET /api/v1/homes/{home_id}/cameras/{camera_id}/roomplan-calibration-session | Caregiver or that camera's publisher reads reference-round progress/proposal state; raw frame bytes are never returned |
+| POST /api/v1/homes/{home_id}/cameras/{camera_id}/roomplan-calibration-session/request-capture | Caregiver requests the current stationary scene-reference round |
+| POST /api/v1/homes/{home_id}/cameras/{camera_id}/roomplan-calibration-session/frames | Only that paired publisher may submit the requested short burst; frames stay process-memory-only and are cleared after solve/cancel/expiry |
 | DELETE /api/v1/homes/{home_id}/cameras/{camera_id}/roomplan-calibration-session | Cancels the transient session and immediately drops any in-memory calibration frames |
+| POST /api/v1/homes/{home_id}/cameras/{camera_id}/roomplan-calibration-session/commit-reference | After a reviewed proposal, persists the last accepted fixed-camera frame as that camera's reference view |
+| POST /api/v1/homes/{home_id}/cameras/{camera_id}/reference-snapshot/request-capture | Requests a fresh reference photo from an already positioned fixed camera |
+| GET /api/v1/homes/{home_id}/cameras/{camera_id}/reference-snapshot | Returns that camera's saved reference image to authorized household/publisher clients |
 | GET /api/v1/homes/{home_id}/cameras/{camera_id}/roomplan-placement-preview | Returns the active RoomPlan scene needed to review that camera's placement; a publisher may fetch only its own camera preview |
 | GET /api/v1/homes/{home_id}/cameras/{camera_id}/roomplan-placement-preview/usdz | Returns the active RoomPlan USDZ through the same camera-scoped publisher-safe boundary |
 | POST /api/v1/homes/{home_id}/camera-registrations/roomplan | Explicitly confirms an automatic proposal or a manually adjusted transform. Only this save replaces the active placement |
@@ -108,14 +111,16 @@ The frame endpoint accepts `frame_base64`, `width`, `height`, and optional
 to 18 MB. Frame bytes are held only during processing and are not written to the
 database, object store, logs, or map response.
 
-Guided person calibration is intentionally overdetermined rather than treating
-four coplanar points as a complete camera calibration. Browser capture APIs do
-not provide a calibrated focal length, and planar IPPE can yield multiple pose
-hypotheses. The worker therefore evaluates a bounded FOV sweep, solves all
-captured floor anchors together, refines candidate poses, and uses RoomPlan
-physical constraints to choose a proposal. Six targets improve conditioning
-and make a single noisy person-foot observation less influential; the UI still
-requires review or manual placement before the transform becomes active.
+The current guided calibration no longer uses a person as a geometric anchor.
+The fixed camera remains stationary while the publisher provides three short
+scene-reference rounds. The worker masks transient people and movable seating
+from matching, matches stable visual evidence to the active RoomPlan landmark
+artifact, and runs the same strict PnP/scene-validity gates as automatic
+localization. Browser capture APIs may not expose trustworthy focal length, so
+the worker searches a bounded horizontal FOV range instead of assuming 60°.
+The chosen FOV is retained only when the pose passes the geometric checks. A
+strong solve is still only a review proposal; manual placement remains the
+fallback before any transform becomes active.
 
 ## Internal geometry-service contract
 
@@ -142,6 +147,40 @@ service is not ready, the API marks a generation job unavailable; it does not
 silently switch to a rectangle, synthetic object list, or alternate fallback.
 See [Real camera geometry model](/architecture/real-geometry-model) for the
 installation and health contract.
+
+### Parallel fixed-camera positioning
+
+Camera localization can run for several fixed cameras at once. The geometry
+service uses a bounded `ThreadPoolExecutor` for CPU-heavy ORB/PnP/FOV work,
+configured by `ONE_POSITIONING_WORKERS` (default `3`, clamped to `1..8`). The
+admission queue is limited to twice the worker count so a burst from many
+cameras cannot create an unbounded in-memory backlog. The ASGI event loop stays
+free while independent OpenCV solves run on request-local arrays.
+
+YOLO-World detection remains serialized by the runtime model lock because the
+shared detector changes its active class vocabulary per request. Learned
+RoomPlan matcher fitting is cached and serialized and does not change Torch's
+process-global thread count. `/health` reports the positioning executor, worker
+count, and queue bound.
+
+The worker pool is independent of room identity: cameras in the same room and
+cameras on different RoomPlan maps can make progress concurrently. Each
+accepted registration retains its own `camera_to_world`, calibrated or solved
+intrinsics/FOV, reference snapshot, and map ID.
+
+### Map selection to live cameras
+
+The web RoomPlan map uses those calibrated transforms to make camera context
+interactive. Clicking a registered camera opens that exact camera. Clicking a
+current/recent person dot opens the camera that produced the newest observation
+plus any other positioned cameras whose calibrated horizontal FOV covers that
+point. Clicking a room or furniture point opens the positioned cameras whose
+calibrated top-down FOV covers the selected coordinate.
+
+When several cameras cover the same area, Camera Manager opens scoped to that
+set and selects one of the matching views; the user can switch among them or
+clear the scope. This is geometric FOV coverage, not a wall-occlusion claim.
+Cameras with unknown FOV are not added merely to make the list look complete.
 
 ## Derived 2D payload
 
@@ -197,14 +236,37 @@ to scene consumers. Creating a new map revision invalidates the old placement.
 
 `POST /api/v1/homes/{home_id}/maps/{map_id}/visual-landmarks` accepts the
 native RGB/depth samples for the active RoomPlan revision and stores only the
-derived ORB landmark artifact. `POST /api/v1/homes/{home_id}/cameras/{camera_id}/localize-roomplan`
-accepts one to eight fixed-camera JPEGs, matches their ORB features to those
-metric landmarks, and runs PnP/RANSAC. Camera setup calls it with
+derived ORB/SIFT landmark artifact. The iOS client chooses a room-size-aware
+32–120 sample target, uploads incrementally in retryable two-frame batches, and
+the API merges the resulting scan views into a bounded 8,000-landmark index.
+`POST /api/v1/homes/{home_id}/cameras/{camera_id}/localize-roomplan`
+accepts one to sixteen fixed-camera JPEGs, matches their ORB and available SIFT
+features to those metric landmarks, and runs PnP/RANSAC. Camera setup calls it with
 `review_only=true`: a strong solution is stored as `needs_review` and returned
 with `review_required=true`, including the 4×4 camera transform, inlier count,
 match count, reprojection error, confidence, and intrinsics source. It does
 **not** invalidate an already confirmed active placement. Weak or ambiguous
 matching returns `needs_rescan` and exposes no proposal.
+
+### Adaptive RoomPlan visual sampling
+
+The native scanner samples the ARKit RGB/depth/pose stream every 0.5 seconds
+into a bounded 192-view reservoir. The final sample count is selected after
+RoomPlan has measured the scene: it is at least 32 and at most 120, and grows
+with the floor footprint, total wall length, wall count, and object complexity.
+The final views are evenly spaced across the retained scan history rather than
+being taken only from the first seconds. When one home scan is assembled from
+multiple room captures, ONE sums the room diagnostics and uploads the combined
+view set, so a larger or multi-room scan receives more visual evidence while
+remaining bounded.
+
+The landmark uploader keeps RGB/depth data compressed until each request is
+prepared, limits each request to two frames or eight million encoded
+characters, retries failed requests, and allows three batches in flight. This
+avoids the memory spike that previously occurred when all scan frames were
+Base64-encoded before saving. The service itself accepts up to 24 frames and
+24 million encoded characters per request, and the stored index preserves
+per-view descriptor diversity up to 8,000 derived landmarks.
 
 The publisher then loads the active RoomPlan scene and USDZ through the
 camera-scoped placement-preview routes. The proposed camera is rendered in
@@ -214,34 +276,58 @@ position, tune yaw/tilt/height, or discard it and retry automatic matching. Only
 explicit save is the boundary that supersedes the previous active or pending
 placement.
 
-### iPhone-guided four-point calibration
+### iPhone-guided scene-reference calibration
 
-The native iPhone app can now coordinate the same person-anchor calibration
-without turning the iPhone camera into the fixed camera. The API derives four
-standing targets from the active RoomPlan floor polygon. Target selection treats
-RoomPlan furniture/object volumes such as beds, tables, sofas, storage, and
-other raised geometry as occupied floor area, expands those footprints with a
-standing-clearance margin, and keeps targets away from room boundaries. If four
-separated clear-floor points cannot be found, calibration is rejected instead
-of asking the caregiver to stand on obstructed geometry. The caregiver walks to
-each target with the iPhone; when they tap **I'm standing on point N**, the API
-changes that target to `capture_requested`. The paired browser publisher polls
-only its own session, captures two short frames from the fixed camera, and
-submits those frames with the known RoomPlan XYZ point as the implicit person
-anchor.
+The native iPhone app now acts as the controller and RoomPlan review surface
+for a separate fixed camera. It does not ask the caregiver to walk to four
+points and it does not use the caregiver's body as a calibration landmark.
+Instead it starts a three-round `scene_reference` session and asks the paired
+fixed camera to capture the room while that camera remains still. Chairs,
+armchairs, stools, people, and other transient/movable content are excluded
+from the stable-anchor set so moving a chair after the RoomPlan scan does not
+by itself invalidate the calibration. The default six-frame semantic consensus
+requires four agreeing frames. When dynamic masking covers at least 45% of the
+camera image, ONE can use three agreeing frames only if every member also has
+strong fresh guided visual matches. This keeps heavy occlusion from making a
+fixed camera impossible to place without turning a single semantic guess into
+an accepted proposal.
 
-The native calibration guide renders wall borders and RoomPlan object
-footprints in its top-down view. When the USDZ attachment is available it also
-shows the same four targets directly on the interactive 3D RoomPlan model, so a
-caregiver can match the highlighted point against furniture in the physical
-room before moving there.
+Session creation is an explicit caregiver action for one selected camera. The
+iOS camera editor exposes **Positioning → Calibrate camera / Run calibration
+again**, and the web camera surface keeps calibration under **Position & map**.
+Pairing, page load, map-status polling, and `needs_rescan` do not create a
+session or call localization. Once the caregiver taps **Start calibration** on
+iOS, that one action advances the three capture rounds; the fixed publisher
+only answers capture requests for the already-active camera-scoped session.
+This keeps several cameras in the same room or across different rooms
+independent and prevents one camera's stale status from starting work for
+another camera.
 
-The session itself is deliberately non-durable. Its ID, target coordinates,
-progress, and final proposal exist in API process memory for at most ten
-minutes. JPEG bytes and the frame-to-target anchor list are cleared after the
-fourth-point solve, cancellation, or expiry. The only durable artifact created
-before confirmation is the existing `needs_review` localization row; activation
-still requires the normal RoomPlan registration endpoint.
+The iPhone continues to show the native RoomPlan geometry and the proposed
+fixed-camera pose. After the third reference round the worker returns either a
+strict review-only proposal or `needs_rescan`. The caregiver can confirm the
+proposal, place the camera manually, or retry after improving the view. On
+confirmation, the latest accepted frame can be committed as that camera's
+reference snapshot; the map can later request a fresh reference image without
+re-running calibration.
+
+The solve itself is observable instead of being tied to one long HTTP request.
+For iPhone-guided calibration the API starts an in-memory localization job in
+the local geometry worker and polls it while the existing calibration session
+publishes `solve_progress`, `solve_stage`, and `solve_progress_updated_at`.
+Progress comes from completed solver stages such as feature extraction,
+RoomPlan landmark matching, PnP/FOV hypotheses, cross-frame consensus, and
+scene validation. The adapter keeps the ordinary 45-second HTTP bound for
+short geometry calls, but a calibration solve fails for timeout only after its
+percentage has stopped increasing for the configured stall window (180 seconds
+by default). Completed worker jobs are transient and raw calibration frames are
+still never persisted by this status path.
+
+The session is deliberately non-durable. Its ID, round progress, transient
+JPEGs, and pending reference frame live in API process memory for at most ten
+minutes. Frame bytes are cleared after solve, cancellation, or expiry. The only
+durable pose before confirmation is the existing `needs_review` localization
+row; activation still requires the normal RoomPlan registration endpoint.
 
 ```mermaid
 sequenceDiagram
@@ -251,18 +337,17 @@ sequenceDiagram
     participant G as Local geometry worker
 
     U->>A: POST roomplan-calibration-session
-    A-->>U: 4 RoomPlan XYZ targets
+    A-->>U: mode=scene_reference, 3 rounds
 
-    loop Four standing points
-        U->>U: Walk to highlighted target
-        U->>A: POST request-capture(target_index)
+    loop Three fixed-scene rounds
+        U->>A: POST request-capture(round_index)
         A-->>C: GET session = capture_requested
-        C->>C: Capture 2 frames from fixed camera
+        C->>C: Capture short stationary burst
         C->>A: POST session/frames
-        A-->>U: Next target / progress
+        A-->>U: Next round / progress
     end
 
-    A->>G: localize-roomplan(review_only=true) + person anchors
+    A->>G: localize-roomplan(review_only=true)
     G-->>A: proposed camera_to_world
     A-->>U: status=review + proposal
 
@@ -278,24 +363,26 @@ sequenceDiagram
 
 ```mermaid
 stateDiagram-v2
-    [*] --> WaitingForPerson: Start session
-    WaitingForPerson --> CaptureRequested: Caregiver is on target
-    CaptureRequested --> WaitingForPerson: Fixed camera uploads target 1-3
-    CaptureRequested --> Solving: Fixed camera uploads target 4
+    [*] --> WaitingForScene: Start session
+    WaitingForScene --> CaptureRequested: Request reference round
+    CaptureRequested --> WaitingForScene: Fixed camera uploads rounds 1-2
+    CaptureRequested --> Solving: Fixed camera uploads round 3
     Solving --> Review: Strong review-only pose
     Solving --> Failed: No safe pose
     Review --> Active: Explicit save
     Review --> Manual: Caregiver rejects proposal
     Manual --> Active: Save reviewed manual transform
-    WaitingForPerson --> Expired: 10 minutes
+    WaitingForScene --> Expired: 10 minutes
     CaptureRequested --> Expired: 10 minutes
-    Failed --> WaitingForPerson: Start again
+    Failed --> WaitingForScene: Start again
 ```
 
 `GET /homes/{home_id}/cameras` also exposes per-camera
 `calibration_needed`, `roomplan_registration_status`, and `roomplan_map_id`.
 The state is evaluated against the current active RoomPlan revision, so a pose
-from an older scan never removes the calibration-needed badge.
+from an older scan never reports as current. Clients present this as optional
+"3D position not set" state rather than forcing a calibration sheet; the user
+can continue live viewing and choose when to recalibrate.
 
 ```mermaid
 stateDiagram-v2

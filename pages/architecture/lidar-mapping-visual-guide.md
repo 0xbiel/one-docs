@@ -86,7 +86,11 @@ provenance or unlock 3D by itself.
 
 The scan combines several sensor facts. LiDAR contributes depth, ARKit
 contributes camera motion and pose, and RGB contributes visual features that
-can later help a different camera recognize where it is.
+can later help a different camera recognize where it is. Sampling is adaptive:
+the native app records a 0.5-second stream into a bounded 192-view reservoir,
+then selects 32–120 evenly spaced views from the measured RoomPlan footprint,
+wall length, and object complexity. A multi-room capture combines the room
+budgets before upload.
 
 ```mermaid
 flowchart TD
@@ -95,14 +99,14 @@ flowchart TD
     frame --> intrinsics["Camera intrinsics<br/>fx · fy · cx · cy"]
     frame --> pose["ARKit camera_to_world<br/>4 × 4 transform"]
 
-    pixel --> keypoint["ORB feature at pixel u,v"]
+    pixel --> keypoint["ORB + optional SIFT feature at pixel u,v"]
     depth --> backproject["Back-project pixel ray<br/>using measured depth"]
     intrinsics --> backproject
     keypoint --> backproject
     backproject --> cameraPoint["3D point in camera space"]
     pose --> worldPoint["Transform into roomplan-local"]
     cameraPoint --> worldPoint
-    worldPoint --> landmark["Metric visual landmark<br/>descriptor + XYZ"]
+    worldPoint --> landmark["Metric visual landmark<br/>ORB/SIFT descriptor + XYZ"]
 ```
 
 Conceptually, the intrinsics turn a pixel into a camera ray, LiDAR supplies the
@@ -125,15 +129,16 @@ sequenceDiagram
 
     I->>A: Upload RoomPlan map revision
     I->>A: Upload bounded RGB + depth + ARKit samples
-    A->>G: Build visual landmarks
-    G-->>A: ORB descriptors + metric XYZ landmarks
+    A->>G: Build visual landmarks in incremental batches
+    G-->>A: ORB/SIFT descriptors + metric XYZ landmarks
     A-->>S: Store derived landmark artifact for map revision
 
     C->>A: Send current JPEG burst with review_only=true
     A->>G: Localize against active RoomPlan landmarks
-    G->>G: ORB matching
+    G->>G: Low-light normalization + dynamic masking
+    G->>G: ORB/SIFT matching
     G->>G: 2D ↔ 3D correspondences
-    G->>G: solvePnPRansac + quality checks
+    G->>G: solvePnPRansac + bounded GPU pose polish + quality checks
 
     alt Strong, unambiguous solution
         G-->>A: positioned + camera_to_world
@@ -151,70 +156,70 @@ Passing the localization gate creates a **proposal**, not an active placement.
 The camera becomes active in the map only after a person reviews and saves that
 transform.
 
-### Remote four-point calibration from the iPhone
+### Remote scene-reference calibration from the iPhone
 
-The caregiver can run person-anchor calibration from the native iPhone camera
-settings or directly from the map's **Calibration needed** card. The phone is a
-controller and RoomPlan display; it never substitutes its own camera image for
-the fixed camera being positioned.
+The caregiver can run fixed-camera scene-reference calibration from native iOS
+camera settings or directly from the map's **Calibration needed** card. The
+phone is a controller and RoomPlan review display; it never substitutes its own
+camera image for the fixed camera being positioned, and the caregiver no longer
+has to stand on calibration points.
 
-The API chooses only walkable floor positions: native RoomPlan object volumes
-are projected onto the floor with extra standing clearance, and targets are
-kept away from those occupied footprints and from walls. The iPhone guide shows
-wall/furniture outlines in the top-down plan and pins the same targets onto the
-interactive USDZ model when it is available.
+The paired fixed camera remains stationary for three short capture rounds.
+RoomPlan walls and durable visual landmarks provide the geometric reference.
+People, chairs, armchairs, stools, and other movable/transient content are
+masked from anchor matching so ordinary room changes do not become calibration
+landmarks.
 
 ```mermaid
 flowchart LR
-    lidar["iPhone RoomPlan map<br/>floor + furniture volumes"] --> targets["API chooses 4 clear<br/>standing targets"]
-    targets --> phone["iPhone shows target N<br/>in 2D + 3D"]
-    phone --> ready["Caregiver taps<br/>I'm standing here"]
-    ready --> command["capture_requested"]
-    command --> mac["Fixed Mac/browser camera<br/>captures 2 frames"]
-    mac --> anchors["Frames + known target XYZ"]
-    anchors --> repeat{"4 targets done?"}
+    lidar["iPhone RoomPlan map<br/>metric 3D + visual landmarks"] --> phone["iPhone starts<br/>scene-reference session"]
+    phone --> command["Request round 1..3"]
+    command --> mac["Fixed Mac/browser camera<br/>captures short burst"]
+    mac --> stable["Mask transient people<br/>and movable seating"]
+    stable --> repeat{"3 rounds done?"}
     repeat -->|"No"| phone
-    repeat -->|"Yes"| solve["Review-only pose solve"]
+    repeat -->|"Yes"| solve["ORB/PnP + bounded FOV search<br/>review-only pose solve"]
     solve --> review["Native preview + confirm<br/>or manual placement"]
 ```
 
 ```mermaid
 sequenceDiagram
-    actor P as Person with iPhone
     participant I as ONE iOS
     participant A as ONE API
     participant W as Fixed web camera
 
     I->>A: Start transient calibration session
-    A-->>I: Point 1 of 4 + XYZ
-    P->>P: Walk to highlighted point
+    A-->>I: mode=scene_reference, round 1 of 3
     I->>A: Request fixed-camera capture
     W->>A: Poll session
-    A-->>W: capture_requested(point 1)
+    A-->>W: capture_requested(round 1)
     W->>W: Capture fixed camera burst
-    W->>A: Submit frames for point 1
-    A-->>I: Point 2 of 4
-    Note over I,W: Repeat through point 4
+    W->>A: Submit frames for round 1
+    A-->>I: Round 2 of 3
+    Note over I,W: Repeat through round 3
     A-->>I: Review-only camera proposal
 ```
 
-The transient session retains only target coordinates, state, and the final
-proposal. Calibration JPEGs live in process memory only while the four points
-are being collected and are cleared when solving starts, the user cancels, or
-the session expires. If the automatic marker is wrong, the iPhone top-down map
+The transient session retains only round state and the final proposal.
+Calibration JPEGs live in process memory only while the three rounds are being
+collected and are cleared when solving finishes, the user cancels, or the
+session expires. If the on-demand marker is wrong, the iPhone top-down map
 accepts a manual X/Z point plus camera height and yaw, then sends that reviewed
-transform through the same explicit registration boundary.
+transform through the same explicit registration boundary. After acceptance,
+the last reference frame may be saved as that camera's reference view.
 
 ## 5. Review before activation
 
-Automatic localization is deliberately one step short of activation. The fixed
-camera page loads the camera-scoped RoomPlan preview, draws the proposed camera
-in amber, and gives the person three choices: confirm it, adjust it manually,
-or discard it and retry.
+On-demand localization is deliberately one step short of activation. It runs
+only after the caregiver starts positioning for that camera. The fixed camera
+page loads the camera-scoped RoomPlan preview, draws the proposed camera in
+amber, and gives the person three choices: confirm it, adjust it manually, or
+discard it and retry.
 
 ```mermaid
 flowchart TD
-    ready["RoomPlan map + visual landmarks ready"] --> auto["One automatic localization proposal per map/session"]
+    ready["RoomPlan map + visual landmarks ready"] --> start["Caregiver chooses Positioning → Calibrate"]
+    start --> auto["One on-demand localization proposal for this session"]
     auto --> strong{"Strong pose found?"}
     strong -->|"No"| fallback["Stay usable without 3D placement<br/>retry or manual placement"]
     strong -->|"Yes"| pending["needs_review proposal<br/>existing active pose unchanged"]

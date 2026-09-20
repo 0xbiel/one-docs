@@ -53,8 +53,8 @@ flowchart TD
     usdz --> render[Web/iOS native model rendering]
     arkitUsdz --> render
 
-    scanSamples[RoomPlan visual samples\nRGB + depth + ARKit pose] --> landmarks[ORB landmark index]
-    landmarks --> localization[ORB matching + PnP/RANSAC]
+    scanSamples[RoomPlan visual samples\nRGB + depth + ARKit pose] --> landmarks[ORB/SIFT landmark index]
+    landmarks --> localization[ORB/SIFT matching + PnP/RANSAC]
     localization --> registration[Camera registration\ncamera_to_world]
     registration --> scene
 
@@ -252,27 +252,47 @@ or low confidence becomes `needs_rescan` and does not expose a usable pose.
 A browser/webcam does not share the RoomPlan ARKit session, so ONE builds a
 visual bridge:
 
-1. During the native scan, iOS samples bounded RGB frames on a periodic timer
-   (up to 10 samples), camera intrinsics, ARKit `camera_to_world`, and LiDAR
-   depth when available. Sampling does not depend only on RoomPlan geometry
-   update callbacks, so a valid scan still carries enough visual frames for
-   separate-camera localization.
-2. The geometry worker finds ORB keypoints/descriptors.
+1. During the native scan, iOS samples RGB frames, camera intrinsics, ARKit
+   `camera_to_world`, and LiDAR depth when available every 0.5 seconds. It keeps
+   a bounded 192-sample temporal reservoir; if a very long scan fills it, the
+   reservoir is thinned so early, middle, and late viewpoints remain represented.
+   At scan completion, ONE computes a target between 32 and 120 samples from the
+   measured floor footprint, wall length, and scene complexity, then selects
+   evenly spaced samples. For a multi-room capture, the room targets and samples
+   are combined before upload, so larger or more complex homes contribute more
+   visual coverage without an unbounded phone memory cost.
+2. The geometry worker finds ORB keypoints/descriptors and attaches optional
+   SIFT descriptors to the same metric points. ORB remains the compact baseline;
+   SIFT improves matching when the iPhone scan and fixed camera see the room at
+   different scales or illumination.
 3. When depth exists, each usable feature is back-projected into a metric 3D
    RoomPlan point.
 4. When depth is absent for some frames, known ARKit poses allow matched ORB
    features to be triangulated across views.
-5. Near-duplicate 3D landmarks are collapsed into 3 cm voxels; the strongest
-   descriptor is retained. Fewer than 40 usable landmarks returns
-   `needs_rescan`.
+5. Near-duplicate 3D landmarks are collapsed into 3 cm voxels per scan view;
+   the strongest descriptor is retained while preserving view diversity. The
+   merged derived index is capped at 8,000 landmarks. Fewer than 40 usable
+   landmarks returns `needs_rescan`.
 6. The backend stores only the derived landmark index, not the raw RGB/depth
    scan frames.
-7. The fixed camera sends one to sixteen current JPEGs. ORB descriptors are
-   matched to the stored landmark descriptors with a ratio test.
-8. `solvePnPRansac` estimates the camera pose from the 2D↔3D correspondences.
-9. ONE accepts a positioned solution only when the solution is strong enough
+7. The native app uploads the samples incrementally in small, retryable batches;
+   the current client uses at most two frames and eight million encoded
+   characters per request, with up to three requests in flight. The API accepts
+   at most 24 frames and 24 million encoded characters per landmark batch.
+8. The fixed camera sends one to sixteen current JPEGs. The worker applies a
+   conservative low-light lift only when luminance statistics indicate a dim
+   scene, masks people and reflective/dynamic regions, then matches ORB and
+   available SIFT descriptors to the stored metric index.
+9. `solvePnPRansac` estimates the camera pose from the 2D↔3D correspondences.
+   The solver ranks the strongest scan views, includes an all-view hypothesis,
+   uses semantic RoomPlan-object seeds only as search hints, and combines
+   stationary-burst matches across frames before final validation.
+10. ONE accepts a positioned solution only when the solution is strong enough
    (including ≥8 inliers, ≥0.35 inlier ratio, ≤6 px reprojection error, and
-   confidence ≥0.55 in the current worker).
+   confidence ≥0.55 in the current worker). CPU OpenCV generates the robust
+   hypotheses; bounded finalist pose refinement and the local detector/learned
+   matcher use the configured MPS/CUDA runtime when available. Model mode does
+   not silently fall back to CPU when GPU is required.
 
 The accepted transform is persisted as `visual-roomplan-registration` in the
 `roomplan-local` coordinate frame. Creating a new RoomPlan map revision
@@ -280,16 +300,15 @@ invalidates old registrations because their 3D coordinate system is no longer
 guaranteed to match.
 
 When visual landmark matching is not strong enough for a separate fixed camera,
-the caregiver can run the guided floor-point calibration. The iPhone shows safe
-RoomPlan floor targets while the fixed publisher captures one or two transient
-frames at each point. Six targets are used when possible. The geometry worker
-uses the detected person's floor contact as a 2D↔3D correspondence, aggregates
-the short burst for robustness, sweeps plausible focal lengths when browser
-intrinsics are unknown, evaluates both planar IPPE solutions, and refines the
-pose against all targets. Room bounds, camera height, uprightness and
-reprojection residuals are used to reject implausible solutions. The result is
-still review-only until the caregiver confirms the map preview or saves a
-manual placement.
+the caregiver can run the three-round scene-reference calibration. The fixed
+publisher captures short transient bursts while the camera remains stationary;
+there are no floor targets and no person anchors. The geometry worker masks
+people and movable seating from stable matching evidence, combines the rounds,
+and searches plausible focal lengths only when calibrated browser intrinsics
+are unavailable. PnP/RANSAC, independent-view support, RoomPlan bounds, camera
+height, uprightness, positive depth, and reprojection residuals reject weak or
+implausible solutions. The result remains review-only until the caregiver
+confirms the map preview or saves a manual placement.
 
 ```mermaid
 flowchart LR

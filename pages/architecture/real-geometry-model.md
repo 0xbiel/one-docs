@@ -71,8 +71,9 @@ approximate metric world point and room-zone association. Detection does not
 create a 3D map and no raw frame is retained.
 
 Separate-camera RoomPlan registration does not depend on YOLO-World. The local
-worker builds ORB descriptors anchored by ARKit RGB + LiDAR depth samples and
-uses OpenCV feature matching plus PnP/RANSAC to estimate the fixed camera pose.
+worker builds ORB descriptors and optional SIFT descriptors anchored by ARKit
+RGB + LiDAR depth samples and uses OpenCV feature matching plus PnP/RANSAC to
+estimate the fixed camera pose.
 Insufficient inliers or excessive reprojection error produces `needs_rescan`.
 
 ## Verification

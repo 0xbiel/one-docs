@@ -42,7 +42,7 @@ continuous workspace.
 
 ## Browser publisher
 
-The publisher asks for `navigator.mediaDevices.getUserMedia({ video: true, audio: true })` only after consent. It stops tracks on unmount. In live mode it requests a backend-issued LiveKit token and connects with adaptive stream and dynacast; in demo mode it shows a privacy-safe placeholder. Caregivers start a publisher pairing from the dashboard: the one-time code stays in a modal with copy/regenerate controls, while the public `/join/:code` route remains the camera's separate exchange surface. After the preview is stable, the camera follows the guided 8–12 second sweep and keeps setup on the same page. `/dashboard/account` exposes the current session/home, privacy link, and explicit sign-out.
+The publisher asks for `navigator.mediaDevices.getUserMedia({ video: true, audio: true })` only after consent. It stops tracks on unmount. In live mode it requests a backend-issued LiveKit token and connects with adaptive stream and dynacast; in demo mode it shows a privacy-safe placeholder. Caregivers start a publisher pairing from the dashboard: the one-time code stays in a modal with copy/regenerate controls, while the public `/join/:code` route remains the camera's separate exchange surface. Pairing ends at consented preview; the dashboard does not poll an old map-generation result and the publisher does not automatically start a walkthrough or RoomPlan localization. Spatial work starts only from the selected camera's **Position & map** controls, and an already-active iPhone scene-reference session is the only case where the publisher responds automatically by supplying requested frames. Publisher preview and caregiver live video are rendered without horizontal mirroring. `/dashboard/account` exposes the current session/home, privacy link, and explicit sign-out.
 
 ### Onboarding consent controls
 
@@ -69,6 +69,21 @@ current-map, and last-seen object data every two seconds. The RoomPlan/USDZ
 model stays mounted while overlays are replaced from the latest observations,
 which keeps registered-camera and concurrent-person markers close to the live
 vision stream without repeatedly downloading or rebuilding the 3D model.
+The RoomPlan renderer uses a white canvas with a darker slate/teal model in
+light appearance and a near-black canvas with a lighter slate/cyan model in
+dark appearance, while camera and presence overlays retain their semantic
+colors. This contrast is applied to the loaded RoomPlan materials rather than
+only changing the page background.
+
+Native RoomPlan overlays are also a navigation surface for live cameras. A
+registered camera marker opens that exact camera. A current or recent person
+dot opens the camera that produced the newest observation together with any
+other positioned cameras whose calibrated horizontal FOV covers that world
+point. Clicking room or furniture geometry uses the same same-map FOV coverage
+test. Camera Manager receives the selected camera plus the matching camera set
+through the `camera` / `cameras` query parameters, scopes its device list to
+those views, and lets the caregiver clear the scope. Cameras without a measured
+or solved FOV are not guessed into the coverage result.
 
 ## Docker route
 
