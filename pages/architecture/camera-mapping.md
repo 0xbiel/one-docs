@@ -150,18 +150,21 @@ installation and health contract.
 
 ### Parallel fixed-camera positioning
 
-Camera localization can run for several fixed cameras at once. The geometry
-service uses a bounded `ThreadPoolExecutor` for CPU-heavy ORB/PnP/FOV work,
-configured by `ONE_POSITIONING_WORKERS` (default `3`, clamped to `1..8`). The
-admission queue is limited to twice the worker count so a burst from many
-cameras cannot create an unbounded in-memory backlog. The ASGI event loop stays
-free while independent OpenCV solves run on request-local arrays.
+Camera localization and visual-landmark construction can run for several fixed
+cameras/maps at once. The geometry service uses a bounded `ThreadPoolExecutor`
+for CPU-heavy ORB/SIFT/PnP/FOV work, configured by `ONE_POSITIONING_WORKERS`
+(default `3`, clamped to `1..8`). The admission queue is limited to twice the
+worker count so a burst from many cameras cannot create an unbounded in-memory
+backlog. The ASGI event loop stays free while independent OpenCV solves and
+RoomPlan landmark builds run on request-local arrays.
 
 YOLO-World detection remains serialized by the runtime model lock because the
-shared detector changes its active class vocabulary per request. Learned
-RoomPlan matcher fitting is cached and serialized and does not change Torch's
-process-global thread count. `/health` reports the positioning executor, worker
-count, and queue bound.
+shared detector changes its active class vocabulary per request. Room-layout
+and single-frame vision handlers are also moved off the event loop, but their
+GPU calls use a bounded single-worker model queue. Learned RoomPlan matcher
+fitting is cached and serialized and does not change Torch's process-global
+thread count. `/health` reports the positioning executor, worker count, queue
+bound, and detector queue bound.
 
 The worker pool is independent of room identity: cameras in the same room and
 cameras on different RoomPlan maps can make progress concurrently. Each
