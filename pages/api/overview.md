@@ -1,6 +1,13 @@
 # API overview
 
-The FastAPI application publishes generated OpenAPI at `/api/v1/openapi.json` and commits the same contract to `one/contracts/openapi.json`. The current contract describes 61 paths, 75 operations, and 56 component schemas. Regenerate it with `ONE_DATABASE_URL=sqlite:////tmp/one-openapi.sqlite PYTHONPATH=. python scripts/generate_openapi.py` when local Docker PostgreSQL is not resolvable; frontend types are generated from that artifact. All product routes are versioned under `/api/v1`; health and pairing start have their own bootstrap policy, while member data is bearer-protected.
+The FastAPI application publishes generated OpenAPI at `/api/v1/openapi.json`
+and commits the same contract to `one/contracts/openapi.json`. The current
+contract describes 82 paths, 101 operations, and 70 component schemas.
+Regenerate it with `ONE_DATABASE_URL=sqlite:////tmp/one-openapi.sqlite
+PYTHONPATH=. python scripts/generate_openapi.py` when local Docker PostgreSQL
+is not resolvable; frontend types are generated from that artifact. All
+product routes are versioned under `/api/v1`; health and pairing start have
+their own bootstrap policy, while member data is bearer-protected.
 
 This section is an implementation reference, not a product promise. Route names, operation IDs, request constraints, and response status codes below were checked against the committed contract and the current FastAPI handlers. The contract is authoritative when a client and a prose page disagree.
 
@@ -22,11 +29,12 @@ then provide the exact calls and schemas.
 | Setup | Cameras, rooms, maps, scene, calibrations, automatic map-generation jobs, and strict RoomPlan uploads | Bearer + home membership; paired publisher limited to its own camera job |
 | Objects/vision | Objects, last-seen, observations, `POST /api/v1/homes/{home_id}/vision/frames` | Bearer; vision also needs active `video_capture` consent |
 | Events/SSE | `GET /api/v1/homes/{home_id}/events`, `GET /api/v1/homes/{home_id}/events/stream` | Bearer + home membership |
+| Safety/identity | Care-recipient face profiles, `GET /api/v1/homes/{home_id}/analytics`, encrypted event snapshots | Recipient consent and caregiver/home authorization |
 | Clips | Create/list records, upload bytes, retrieve content | Bearer + home membership; expiry and publisher gates |
 | LiveKit | Token minting and webhook | Bearer for token; signed webhook in production |
 | Family | Members, invitations, invitation acceptance, family assistant | Bearer + `family_mode` consent; role/subject gates |
 | Medication | Plans, updates, check-ins, deterministic reminders | Bearer + `medication_management` consent |
-| Check-ins | Resident check-in and caregiver summary | Bearer + role/subject policy; bounded context |
+| Check-ins | Daily check-in, caregiver summary, and 7–90 day analytics | Bearer + role/subject policy; bounded context |
 | Privacy | Export and delete | Bearer + home membership; deletion is admin-only |
 | Admin | Retention run | Bearer + admin role |
 
@@ -48,6 +56,7 @@ flowchart LR
     setup --> ingest[POST vision/frames or observations]
     ingest --> review[GET events or events/stream]
     review --> caregiver[Caregiver review]
+    caregiver --> checkin[POST check-ins / GET analytics]
 ```
 
 Pairing completion creates the bearer session; the API rejects vision and media operations when the required consent is missing or paused.

@@ -1,6 +1,6 @@
 # Testing
 
-The backend test suite uses `pytest`; the frontend uses Vitest through the Vite setup; iOS includes an XCTest target.
+The backend test suite uses `pytest`; the frontend uses Vitest through the Vite setup; iOS includes an XCTest target. The documentation site is built with Vocs on Node 22 or newer.
 
 ## Backend
 
@@ -22,6 +22,21 @@ git diff --exit-code -- contracts/openapi.json
 ```
 
 The generated file at `one/contracts/openapi.json` is the API artifact consumed by the frontend type generator; treat it as source-controlled build output. The web and iOS repositories also pin reviewed snapshots under `contracts/openapi.json` so their standalone CI/builds do not depend on a sibling checkout. Compare those snapshots before publishing a new backend contract tag.
+
+The current contract workflow is:
+
+```bash
+cd one
+ONE_DATABASE_URL='sqlite:///:memory:' PYTHONPATH=. .venv/bin/python scripts/generate_openapi.py
+
+cd ../one-frontend
+cp ../one/contracts/openapi.json contracts/openapi.json
+npm run generate:api
+```
+
+After generation, `one/contracts/openapi.json`,
+`one-frontend/contracts/openapi.json`, `one-frontend/src/api/schema.d.ts`, and
+`one-ios/contracts/openapi.json` should describe the same route surface.
 
 The opt-in PostgreSQL contract suite requires a disposable database URL. In
 CI, PostgreSQL 16 is provided as a service; locally, point
@@ -76,3 +91,13 @@ device, complete a scan, confirm the native JSON POST, USDZ PUT, scene refresh,
 reload persistence, and RealityKit rendering. Run the `OneTests` XCTest target
 for model/store coverage. A parser or simulator build cannot prove LiDAR
 capture behavior.
+
+## Documentation
+
+```bash
+cd one-docs
+PATH="/opt/homebrew/opt/node@22/bin:$PATH" npm run build
+```
+
+The docs build catches broken Vocs configuration and page/link integration. It
+does not replace backend, browser, or physical-device acceptance tests.

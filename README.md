@@ -39,6 +39,14 @@ behavioral job states, privacy boundary, and local model runtime. The
 the complete contributor-facing flow from RGB/LiDAR input through 2D/3D map
 artifacts, camera localization, live object projection, and client rendering.
 
+The current caregiver context also includes a consent-gated face-profile flow,
+temporal fall-safety review signals, one encrypted evidence snapshot per fall
+episode, and a three-prompt daily check-in. `GET /api/v1/homes/{home_id}/analytics`
+provides bounded 7–90 day aggregates. The family assistant receives only
+medication records, daily check-in summaries, and fall-safety analytics; it
+does not receive raw frames, face templates, event image bytes, or unbounded
+transcripts. See [Daily check-ins & fall analytics](pages/api/analytics.md).
+
 ## Content boundary
 
 Documentation describes the current checkout, including known demo-only and deployment-intent paths. It never includes real `.env` values, keys, bearer tokens, resident data, or copied secrets. Update the relevant page when a sibling repository’s implementation changes.

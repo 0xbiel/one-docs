@@ -42,6 +42,21 @@ care-recipient ID separately from the optional assigned-caregiver user ID, and
 check-ins retain who marked the reminder. UUIDs sent in medication request
 bodies are normalized to the backend's canonical lowercase representation.
 
+## Daily check-in and safety analytics
+
+Home’s **Today** card opens a caregiver-led daily check-in sheet. The sheet
+uses three short prompts, preserves selected answers while moving Back or
+Continue, and submits a bounded summary through the native
+`recordDailyCheckIn` API adapter. The result state shows status, trend,
+explanation, and limitations; it does not record raw audio.
+
+Events, Assistant, and the check-in sheet expose a separate safety-context card
+with recent fall signals, review count, and whether a check-in was completed.
+Fall signals remain heuristic `needs_review` observations and are not presented
+as emergency detection or diagnosis. The backend family assistant receives the
+bounded daily-check-in and fall-analytics context, while biometric templates,
+camera frames, and event snapshot bytes stay outside that request.
+
 ## Native project layout
 
 The native target follows the same feature-oriented shape as PocketDetour so a screen can be found without searching a monolithic view file:

@@ -10,13 +10,22 @@ ONE’s privacy posture is implemented as gates and data lifetimes, not just cop
 - Identity and medical-inference labels are rejected at the frame boundary.
 - Observations are approximate and explicitly marked as non-diagnostic.
 - Event records expire after 30 days; clip records are designed for seven days.
+- Fall-safety events are temporal heuristic review prompts; at most one current
+  encrypted JPEG/PNG snapshot is attached to the event episode.
+- Face profiles are care-recipient scoped, consent-gated, encrypted at rest,
+  and revoked by deleting the template artifact and marking the profile
+  revoked. Templates and embeddings are never returned to clients or the
+  assistant.
 - Clip bytes can be sealed with AES-GCM using a locally supplied key.
 - Audit rows record consent, pairing, and privacy actions.
 - Export and deletion requests are exposed through backend routes and web/iOS controls.
 - iOS includes `PrivacyInfo.xcprivacy` and keeps RoomPlan-unavailable devices on
   an explicit non-3D/legacy state; they must not be presented as LiDAR maps.
 - Family sharing requires an explicit `family_mode` purpose and member/subject checks.
-- Medication plans, reminders, and check-ins require `medication_management` consent; family-assistant context is limited to those records.
+- Medication plans, reminders, and check-ins require purpose-specific consent.
+  Assistant context is limited to medication records, daily check-in summaries,
+  and bounded fall-safety analytics; it excludes raw frames, face templates,
+  event snapshot bytes, and unbounded transcripts.
 
 ## Camera-map retention
 

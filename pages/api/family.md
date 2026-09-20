@@ -16,9 +16,25 @@ Operation ID: `family_invite_accept_api_v1_family_invites_accept_post`. Public c
 
 ## `POST /api/v1/homes/{home_id}/family-assistant`
 
-Operation ID: `family_assistant_api_v1_homes__home_id__family_assistant_post`. Bearer caregiver/admin with family subject policy. Request (`FamilyAssistantIn`) accepts `message` (max 1000, default empty) and optional `subject_user_id`. The context is deliberately limited to the subject’s active medication plans and up to 100 check-in rows; it excludes frames, events, transcripts, and the full household stream.
+Operation ID: `family_assistant_api_v1_homes__home_id__family_assistant_post`.
+Bearer caregiver/admin with family subject policy. Request
+(`FamilyAssistantIn`) accepts `message` (max 1000, default empty) and either
+`subject_user_id` or `care_recipient_id`.
 
-The response includes `data`, `degraded`, `inference_status`, `subject_user_id`, `context_scope`, `medical_advice: false`, and `model_version`. Evidence IDs are filtered to the bounded context.
+The context is deliberately limited to the selected subject’s active
+medication plans, medication acknowledgements, recent daily check-in
+summaries, event counts, and bounded fall-safety analytics. It excludes raw
+frames, face templates, encrypted event snapshot bytes, unbounded transcripts,
+and the full household stream. The response carries
+`context_scope="medication plans, medication check-ins, daily check-ins, and
+bounded fall-safety analytics"`, filtered evidence IDs/timestamps, and
+`medical_advice: false`.
+
+The response includes `data`, `degraded`, `inference_status`, the selected
+subject/care-recipient identifiers, `context_scope`, `medical_advice: false`,
+and `model_version`. Evidence IDs are filtered to the bounded context. If the
+local model is unavailable, the deterministic response remains an
+administrative review summary rather than a diagnosis or emergency decision.
 
 ## `PATCH /api/v1/homes/{home_id}/family/members/{user_id}`
 

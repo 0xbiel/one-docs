@@ -9,7 +9,7 @@ projection, and persisted observations, see
 
 ## Frame contract
 
-`POST /api/v1/homes/{home_id}/vision/frames` accepts a camera ID, base64 frame bytes (maximum 3 MB after decode), width/height, zero to 20 candidate labels, optional capture timestamp, and optional positive depth in meters. With no labels, the backend uses enabled household-object labels and then a bounded household-item default vocabulary. Labels for face, identity, emotion, medical symptom, and diagnosis inference are rejected.
+`POST /api/v1/homes/{home_id}/vision/frames` accepts a camera ID, base64 frame bytes (maximum 3 MB after decode), width/height, zero to 20 candidate labels, optional capture timestamp, and optional positive depth in meters. With no labels, the backend uses enabled household-object labels and then a bounded household-item default vocabulary. Labels for face, identity, emotion, medical symptom, and diagnosis inference are rejected at this generic object-label boundary. Consent-gated care-recipient face matching uses the separate face-profile enrollment routes documented in [Objects, vision & events](/api/observations).
 
 The response includes detections, a detector version, any derived observation/event IDs, `frames_persisted: false`, and a privacy note that frame bytes were processed in memory and not stored.
 
@@ -54,4 +54,11 @@ behavioral contract and the current route-status boundary.
 
 ## Family assistant scope
 
-`POST /api/v1/homes/{home_id}/family-assistant` is intentionally narrower than the check-in assistant. It sends only the selected subject’s active medication plans and up to 100 bounded check-in rows to the local model adapter. It excludes camera frames, transcripts, events, and a full household stream. The response reports whether it degraded to the deterministic `rules-family-v1` summary and always carries `medical_advice: false`.
+`POST /api/v1/homes/{home_id}/family-assistant` receives the selected
+subject’s active medication plans, medication acknowledgements, recent daily
+check-in summaries, event counts, and bounded fall-safety analytics. It
+excludes camera frames, face templates, encrypted event snapshot bytes,
+unbounded transcripts, and the full household stream. The response reports
+whether it degraded to the deterministic `rules-family-v1` summary and always
+carries `medical_advice: false`. See [Daily check-ins & fall analytics](/api/analytics)
+for the aggregate shape and privacy boundary.

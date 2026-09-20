@@ -24,6 +24,22 @@ selector reads the independent care-recipient list for the active care space,
 stores the selected care-profile ID separately from medication subject IDs, and
 never changes the session or membership boundary.
 
+## Daily check-in and safety context
+
+`/dashboard/live` presents the caregiver-led daily check-in as three short
+prompts with explicit Start, Back, Continue, and Record actions. The client
+sends the bounded answer summary to `POST /api/v1/homes/{home_id}/check-ins`,
+then invalidates events and analytics so the recorded `daily_check_in` event
+appears in the same review stream.
+
+Events and Assistant show the 30-day `GET /api/v1/homes/{home_id}/analytics`
+summary: fall signals, signals needing review, check-in completion, coarse
+trend, and recent bounded evidence. The assistant calls the backend family
+assistant in live mode and labels its context as medication records, daily
+check-ins, and fall-safety analytics. Raw frames, face templates, event image
+bytes, and unbounded transcripts are never placed in the browser assistant
+request.
+
 On phone and tablet layouts the drawer shares the same rounded top-left
 treatment, and its close control is absolutely positioned in the drawer header
 area so it does not consume a full flex row before the care-space content. The

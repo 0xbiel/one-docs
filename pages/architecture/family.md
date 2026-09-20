@@ -33,7 +33,16 @@ DELETE /api/v1/homes/{home_id}/family/members/{user_id}
 POST  /api/v1/homes/{home_id}/family-assistant
 ```
 
-The assistant receives only active plans and bounded check-in rows for the selected subject. It does not receive frames, transcripts, events, or a full household stream, and responses carry `medical_advice: false`.
+The assistant receives active plans, medication acknowledgements, recent daily
+check-in summaries, event counts, and bounded fall-safety analytics for the
+selected subject. It does not receive raw frames, face templates, encrypted
+event snapshot bytes, unbounded transcripts, or a full household stream, and
+responses carry `medical_advice: false`.
+
+Daily check-ins are caregiver-led and appear as `daily_check_in` events. Fall
+signals are separate `fall_suspected` review prompts with `needs_review`
+status. The UI keeps both visible as context without presenting either as a
+diagnosis or emergency decision.
 
 ## Client status
 

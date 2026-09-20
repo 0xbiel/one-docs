@@ -8,6 +8,24 @@ For the endpoint-by-endpoint contract reference, see [Objects, vision & events](
 
 `GET /api/v1/homes/{home_id}/events/stream` emits server-sent events for home topics. The frontend uses `fetchEventSource` and ignores heartbeat frames. The current bus is process-local; use a durable broker before multi-instance deployment.
 
+The event stream includes normal derived observations plus `daily_check_in` and
+`fall_suspected` records. A daily check-in is the reviewable companion event
+created by `POST /check-ins`. A fall signal is created only after the temporal
+heuristic confirms an upright-to-low transition and is always marked
+`needs_review`; it is not an emergency alert or diagnosis.
+
+Fall events may expose `snapshot_path` and `snapshot_content_type`. The
+authorized image route is:
+
+```text
+GET /api/v1/homes/{home_id}/events/{event_id}/snapshot
+```
+
+Only one encrypted event snapshot is retained for the safety episode. The
+route is private/no-store and the snapshot follows event retention, privacy
+export, and deletion behavior. Raw vision frames are not persisted as part of
+ordinary event ingestion.
+
 ## Clips
 
 Clip records are designed for seven-day expiry. Content is held by the encrypted local clip store when `ONE_CLIP_ENCRYPTION_KEY_B64` is configured; the API checks authorization before retrieval and the retention endpoint removes expired material. Never interpret a clip record as proof that a raw frame pipeline persists all video—the vision frame route explicitly does not persist its input.

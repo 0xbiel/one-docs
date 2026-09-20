@@ -55,7 +55,7 @@ export default defineConfig({
       { text: 'Understand the API', items: [{ text: 'API overview', link: '/api/overview' }, { text: 'Spatial models, maps & detection', link: '/api/spatial-vision' }] },
       { text: 'Contract', items: [{ text: 'Auth, pairing & sessions', link: '/api/auth-sessions' }, { text: 'Schemas & errors', link: '/api/schemas' }, { text: 'Request examples', link: '/api/examples' }] },
       { text: 'Resources', items: [{ text: 'Homes, rooms & calibration', link: '/api/homes' }, { text: 'Consent & privacy', link: '/api/privacy' }, { text: 'Objects, vision & events', link: '/api/observations' }, { text: 'Clips & LiveKit', link: '/api/media' }] },
-      { text: 'Family', items: [{ text: 'Check-ins & summaries', link: '/api/checkins' }, { text: 'Members, invites & assistant', link: '/api/family' }, { text: 'Medication plans & reminders', link: '/api/medication' }] },
+      { text: 'Family', items: [{ text: 'Check-ins & summaries', link: '/api/checkins' }, { text: 'Daily check-ins & analytics', link: '/api/analytics' }, { text: 'Members, invites & assistant', link: '/api/family' }, { text: 'Medication plans & reminders', link: '/api/medication' }] },
       { text: 'Operations', items: [{ text: 'Retention & webhooks', link: '/api/operations' }] },
     ],
     '/security/': [

@@ -19,7 +19,8 @@ contract. The generated JSON contract remains the source of truth.
 | `ObjectIn` | object create | label; optional display name |
 | `ObservationIn` | derived observation | optional IDs/coordinates; confidence 0–1; uncertainty 0–100 |
 | `VisionIn` | frame ingestion | camera, base64, dimensions, 1–20 candidate labels; optional capture/depth |
-| `CheckInIn` | resident check-in | optional subject; transcript max 4000 |
+| `CheckInIn` | daily check-in | optional `subject_user_id` or `care_recipient_id` (mutually exclusive); transcript max 4000 |
+| `FaceEnrollmentIn` | care-recipient face profile | 3–8 bounded `FaceEnrollmentFrameIn` samples; each sample records `front` or `back` camera position |
 | `ClipIn` | clip record | safe object key, start/end timestamps |
 | `ClipBytesIn` | clip upload | base64 content max 12,000,000 chars |
 | `LiveKitTokenIn` | token minting | mode `auto\|publish\|subscribe`, default auto |
@@ -29,6 +30,14 @@ contract. The generated JSON contract remains the source of truth.
 | `MedicationPlanIn` | plan create | subject, name, dose, schedule; optional instructions/active/`assigned_caregiver_id` |
 | `MedicationPlanUpdate` | plan patch | nullable partial fields including `assigned_caregiver_id`; optional version ≥1 |
 | `MedicationCheckInIn` | check-in upsert | date-time and status pending/taken/skipped/missed |
+
+The analytics route returns an aggregate response rather than a separate
+unbounded table schema. Its `fall` and `daily_check_in` sections contain
+windowed counts, coarse trend labels, daily buckets, recent bounded evidence,
+and limitations. The `assistant_context` section explicitly lists the
+included records (`daily_check_in_summary`, `fall_safety_analytics`,
+`medication_records`) and excluded material (`raw_frames`, `face_templates`,
+`event_snapshot_bytes`, `unbounded_transcripts`).
 
 ## Mapping contract schemas
 

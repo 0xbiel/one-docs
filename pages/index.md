@@ -12,13 +12,13 @@ Run the [quickstart](/guide/quickstart), then explore the [architecture](/archit
 
 | Slice | Current implementation | Source of truth |
 | --- | --- | --- |
-| Backend | FastAPI modular monolith, SQLite adapter, versioned `/api/v1` routes, family/medication/check-in APIs | [`one/app/main.py`](https://github.com/0xbiel/one/blob/main/app/main.py) |
-| Vision | Deterministic no-download detector, temporal hit tracking, calibrated-approximate projection, zone fallback | `one/app/vision.py` |
-| Web | React/Vite dashboard with family mode, demo/live API modes, SSE mapping, pairing, privacy controls, camera-derived 2D map contract, and browser publisher | `one-frontend/src/` |
-| iOS | SwiftUI caregiver/resident/family shells, runtime endpoint configuration, styling tokens, and RoomPlan capture when supported; native upload qualification remains separate | `one-ios/One/` |
+| Backend | FastAPI modular monolith, SQLite adapter, versioned `/api/v1` routes, care-recipient face profiles, fall-safety events/snapshots, daily-check-in analytics, family/medication APIs | [`one/app/main.py`](https://github.com/0xbiel/one/blob/main/app/main.py) |
+| Vision | Deterministic no-download detector, temporal hit tracking, consent-gated person matching, fall heuristic, calibrated-approximate projection, zone fallback | `one/app/vision.py`, `one/app/face.py`, `one/app/fall.py` |
+| Web | React/Vite caregiver dashboard with daily check-in flow, safety analytics, event snapshots, bounded assistant context, family mode, SSE mapping, pairing, privacy controls, and browser publisher | `one-frontend/src/` |
+| iOS | SwiftUI caregiver/resident/family shells with daily check-in sheet, safety analytics, event review, runtime endpoint configuration, styling tokens, and RoomPlan capture when supported | `one-ios/One/` |
 | Inference | Optional OpenAI-compatible adapter; local LM Studio/Qwen is the default and OpenRouter/other gateways are explicit overrides; deterministic summary fallback | `one/app/integrations.py` |
 
-> **Read the status labels carefully.** “Implemented” means code exists in this checkout. Family and medication flows are synthetic/demo state in the clients, even though bounded backend routes exist. Docker services, PostgreSQL, OWLv2 inference, and production LiveKit subscriber integration still need deployment work.
+> **Read the status labels carefully.** “Implemented” means code exists in this checkout. Face matching and fall detection are consent-gated local review aids, not authentication, emergency detection, or diagnosis. Some broader family/medication presentation rows remain synthetic in explicit demo mode. Docker services, PostgreSQL, OWLv2 inference, and production LiveKit subscriber integration still need deployment work.
 
 The mapping boundary is documented in [Camera mapping](/architecture/camera-mapping):
 the RGB path is a relative 2D geometry job backed by the local host service,

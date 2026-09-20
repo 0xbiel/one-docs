@@ -81,6 +81,6 @@ The adapter is never the authorization or safety boundary.
 
 ## Family-mode boundary
 
-Family mode is not a continuous household camera feed. With `family_mode` consent, an admin or caregiver can list household members and issue a single-use invite for another resident or caregiver. With `medication_management` consent, caregivers can organize human-entered plans, deterministic reminder slots, and check-in states (`pending`, `taken`, `skipped`, `missed`). The family assistant receives only the selected subject’s active plans and bounded check-in rows; it does not receive camera frames, transcripts, events, or the full household stream.
+Family mode is not a continuous household camera feed. With `family_mode` consent, an admin or caregiver can list household members and issue a single-use invite for another resident or caregiver. With purpose-specific consent, caregivers can organize human-entered plans, deterministic reminder slots, medication check-in states (`pending`, `taken`, `skipped`, `missed`), and a separate three-prompt daily check-in. The family assistant receives only the selected subject’s active plans, medication acknowledgements, daily check-in summaries, event counts, and bounded fall-safety analytics; it does not receive raw frames, face templates, event snapshot bytes, unbounded transcripts, or the full household stream.
 
 The web/iOS family surfaces currently demonstrate this flow with synthetic rows. The backend routes persist through the selected database, but client fixture data and real-person governance are not implied.
