@@ -39,6 +39,7 @@ export default defineConfig({
     { text: 'Guide', link: '/guide/quickstart' },
     { text: 'Architecture', link: '/architecture/overview' },
     { text: 'API', link: '/api/overview' },
+    { text: 'Legal', link: '/legal/privacy-and-data-use' },
     { text: 'Demo', link: '/demo' },
     { text: 'GitHub', link: 'https://github.com/0xbiel/one' },
   ],
@@ -60,6 +61,9 @@ export default defineConfig({
     ],
     '/security/': [
       { text: 'Trust boundaries', items: [{ text: 'Authentication & sessions', link: '/security/authentication' }, { text: 'Privacy by design', link: '/security/privacy' }, { text: 'Security model', link: '/security/model' }, { text: 'Known limitations', link: '/security/limitations' }] },
+    ],
+    '/legal/': [
+      { text: 'Privacidad y uso de datos', items: [{ text: 'Resumen y documentos', link: '/legal/privacy-and-data-use' }] },
     ],
   },
 })
