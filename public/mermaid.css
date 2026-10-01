@@ -4,6 +4,11 @@
   --one-mermaid-cyan: #45d6e2;
   --one-mermaid-ink: #111318;
   --one-mermaid-muted: #5b626f;
+  --one-mermaid-node: #fff;
+  --one-mermaid-node-border: var(--one-mermaid-blue);
+  --one-mermaid-label-surface: #f7fcfd;
+  --one-mermaid-cluster-surface: rgb(69 214 226 / 7%);
+  --one-mermaid-cluster-border: rgb(23 105 232 / 24%);
   overflow: hidden;
   border: 1px solid rgb(23 105 232 / 14%);
   border-radius: 24px;
@@ -22,13 +27,26 @@
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif !important;
 }
 
+[data-v-mermaid-container] svg text,
+[data-v-mermaid-container] svg tspan {
+  color: var(--one-mermaid-ink) !important;
+  fill: var(--one-mermaid-ink) !important;
+  opacity: 1 !important;
+}
+
+[data-v-mermaid-container] svg foreignObject * {
+  color: var(--one-mermaid-ink) !important;
+  -webkit-text-fill-color: var(--one-mermaid-ink) !important;
+  opacity: 1 !important;
+}
+
 [data-v-mermaid] .node rect,
 [data-v-mermaid] .node circle,
 [data-v-mermaid] .node ellipse,
 [data-v-mermaid] .node polygon,
 [data-v-mermaid] .node path {
-  fill: #fff !important;
-  stroke: var(--one-mermaid-blue) !important;
+  fill: var(--one-mermaid-node) !important;
+  stroke: var(--one-mermaid-node-border) !important;
   stroke-width: 1.5px !important;
   filter: drop-shadow(0 8px 12px rgb(17 19 24 / 8%));
 }
@@ -64,20 +82,20 @@
 [data-v-mermaid] .edgeLabel,
 [data-v-mermaid] .edgeLabel p {
   color: var(--one-mermaid-muted) !important;
-  background: #f7fcfd !important;
+  background: var(--one-mermaid-label-surface) !important;
   font-size: .82rem !important;
   font-weight: 600 !important;
 }
 
 [data-v-mermaid] .edgeLabel rect,
 [data-v-mermaid] .labelBkg {
-  fill: #f7fcfd !important;
+  fill: var(--one-mermaid-label-surface) !important;
   opacity: .96 !important;
 }
 
 [data-v-mermaid] .cluster rect {
-  fill: rgb(69 214 226 / 7%) !important;
-  stroke: rgb(23 105 232 / 24%) !important;
+  fill: var(--one-mermaid-cluster-surface) !important;
+  stroke: var(--one-mermaid-cluster-border) !important;
   stroke-width: 1px !important;
 }
 
@@ -92,6 +110,42 @@
 [data-v-mermaid-loading] {
   padding: 28px 24px;
   color: var(--one-mermaid-muted);
+}
+
+:root:is([data-vocs-theme="dark"], [data-theme="dark"], .dark) [data-v-mermaid-container],
+body:is([data-vocs-theme="dark"], [data-theme="dark"], .dark) [data-v-mermaid-container] {
+  --one-mermaid-ink: #f3f6fb;
+  --one-mermaid-muted: #c1ccda;
+  --one-mermaid-node: #172230;
+  --one-mermaid-node-border: #78a9ff;
+  --one-mermaid-label-surface: #182431;
+  --one-mermaid-cluster-surface: rgb(69 214 226 / 11%);
+  --one-mermaid-cluster-border: rgb(69 214 226 / 40%);
+  border-color: rgb(120 169 255 / 28%);
+  background:
+    radial-gradient(circle at 92% 8%, rgb(69 214 226 / 12%), transparent 30%),
+    linear-gradient(145deg, #10151d 0%, #111923 68%, #101b21 100%);
+  box-shadow: 0 14px 38px rgb(0 0 0 / 24%);
+}
+
+[data-v-mermaid] .actor,
+[data-v-mermaid] .actor-man,
+[data-v-mermaid] .actor-woman,
+[data-v-mermaid] .actor-box,
+[data-v-mermaid] .labelBox,
+[data-v-mermaid] .note,
+[data-v-mermaid] .stateGroup rect,
+[data-v-mermaid] .statediagram-state rect {
+  fill: var(--one-mermaid-node) !important;
+  stroke: var(--one-mermaid-node-border) !important;
+}
+
+[data-v-mermaid] .actor-line,
+[data-v-mermaid] .messageLine0,
+[data-v-mermaid] .messageLine1,
+[data-v-mermaid] .signalLine,
+[data-v-mermaid] .loopLine {
+  stroke: var(--one-mermaid-node-border) !important;
 }
 
 @media (max-width: 760px) {
