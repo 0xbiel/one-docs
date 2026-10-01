@@ -55,8 +55,8 @@ frontend bundle. Rebuild and recreate the frontend from the backend Compose
 project:
 
 ~~~bash
-cd one
-docker compose up --build -d api frontend
+cd one-backend
+docker compose --profile web up --build -d
 docker compose ps
 ~~~
 

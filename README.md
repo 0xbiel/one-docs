@@ -6,7 +6,7 @@
 
 Polished Vocs documentation for the ONE local-first cognitive companion MVP. The content is grounded in the sibling repositories:
 
-- `one`: FastAPI backend and Docker wiring
+- `one-backend` (the local checkout may be named `one`): FastAPI backend and Docker wiring
 - `one-frontend`: React/Vite dashboard and browser publisher
 - `one-ios`: SwiftUI app and RoomPlan capture surface
 

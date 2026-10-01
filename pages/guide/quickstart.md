@@ -4,24 +4,41 @@ This path runs the current local MVP. Start with Docker: it provides the same-or
 
 ## 1. Start Docker (recommended)
 
-From the repository root:
+From the parent directory containing the one-backend checkout (the local
+folder may also be named one):
 
-```bash
-cd one
+~~~powershell
+Set-Location one-backend
+if (-not (Test-Path .env)) { Copy-Item .env.example .env }
+docker compose --profile web up --build -d
+~~~
+
+On macOS or Linux, use:
+
+~~~bash
+cd one-backend
 test -f .env || cp .env.example .env
-docker compose up --build -d api frontend
-```
+docker compose --profile web up --build -d
+~~~
 
-Compose defaults the API to `postgresql://one:change-me@postgres:5432/one` and
-applies the tracked migrations before serving requests. If an existing `.env`
-still contains the old `ONE_DATABASE_URL=sqlite:///...` line, change it to the
-PostgreSQL URL (or remove the line so Compose can use its default); do not
-overwrite an existing `.env` blindly. Open `http://127.0.0.1:4175`. The
-frontend proxies `/api/*` to FastAPI. Verify both the site and the selected
-database with `curl http://127.0.0.1:4175/api/v1/health`; a healthy Docker run
-reports `"database":"postgresql"`. The API is internal port `8000`; LiveKit uses
-`7880`, `7881`, and `7882/udp`. If a local `.env` overrides the frontend port,
-use that actual port consistently.
+This starts the API, PostgreSQL, Redis, MinIO, LiveKit, the sibling frontend
+and Caddy. Compose defaults the API to
+postgresql://one:change-me@postgres:5432/one and applies the tracked migrations
+before serving requests. If an existing .env still contains the old
+ONE_DATABASE_URL=sqlite:///... line, remove it or change it to the PostgreSQL
+URL; do not overwrite an existing .env blindly.
+
+Open http://127.0.0.1:4175. The frontend proxies /api/* to FastAPI. Verify the
+site and selected database with:
+
+~~~powershell
+Invoke-WebRequest -Uri "http://127.0.0.1:4175/api/v1/health" -UseBasicParsing
+~~~
+
+A healthy Docker run reports database=postgresql. The API is internal port
+8000; LiveKit uses 7880, 7881 and 7882/udp. If .env overrides the frontend
+port, use that actual port consistently.
+
 
 ## 2. Create an account and sign in
 
