@@ -13,6 +13,29 @@ projection, and persisted observations, see
 
 The response includes detections, a detector version, any derived observation/event IDs, `frames_persisted: false`, and a privacy note that frame bytes were processed in memory and not stored.
 
+## Local diagnostics
+
+The local Camera Positioning Lab also links to **Face Recognition Debug** and
+**Fall Detection Debug**. These pages call separate authenticated endpoints:
+
+- `POST /api/v1/homes/{home_id}/vision/debug/faces` runs only the local face
+  detector, liveness check, and transient embedding matcher. Processing is
+  blocked unless the household has an active consented face profile. An
+  identity is shown as matched only after three consecutive matches. The
+  response omits embeddings and reports `raw_frames_persisted: false` and
+  `fall_scoring_ran: false`.
+- `POST /api/v1/homes/{home_id}/vision/debug/fall` runs person pose estimation,
+  learned pose-sequence scoring, and an isolated confirmation tracker. It
+  reports pose/model readiness, score freshness, the gate reason, and whether
+  that tracker would emit `fall_suspected / needs_review`. It does not persist
+  frames, observations, events, or snapshots, and does not share tracker state
+  with production frame handling.
+
+These endpoints are for local debugging, not validation claims or caregiver
+notifications. Establish fall sensitivity and false-alert rates with
+independently labelled, representative clips and held-out evaluation data
+before changing thresholds.
+
 ## Detection contract
 
 Each detection carries a candidate label, confidence, bounding box, transient
